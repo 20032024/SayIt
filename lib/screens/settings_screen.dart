@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/home_screen.dart';
+import 'custom_bottom_nav.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,16 +15,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Permite regresar a la pantalla anterior
-            Navigator.pop(context);
-          },
-        ),
-      ),
+      appBar: AppBar(title: const Text('Settings')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -109,22 +101,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
+
       // Barra de navegación inferior
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Categorías'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Settings'),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            // Navega a la pantalla de Settings
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CategoriesScreen()),
-            );
-          }
-        },
-      ),
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
     );
   }
 }
