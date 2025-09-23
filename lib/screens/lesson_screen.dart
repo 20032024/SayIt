@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'evaluation_dialog.dart';
 // --- PANTALLA DE RESULTADOS (EJEMPLO) ---
 class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key});
@@ -141,13 +141,13 @@ class SubmitLessonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
+      // --- MODIFICACIÓN AQUÍ ---
       onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ResultsScreen()),
-        );
-        print('Avanzando a la siguiente pantalla...');
+        // En lugar de navegar, ahora mostramos el diálogo
+        showEvaluationDialog(context);
+        print('Mostrando diálogo de evaluación...');
       },
+      // --- FIN DE LA MODIFICACIÓN ---
       style: ElevatedButton.styleFrom(
         backgroundColor: const Color(0xFFF18F42),
         padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 100.0),
