@@ -1,1 +1,6 @@
 .
+# Flutter build files
+.flutter-tool
+.packages
+.dart_tool/
+build/
