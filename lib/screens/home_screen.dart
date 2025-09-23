@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/settings_screen.dart';
 import 'package:project_sayit/screens/detail_screens.dart';
+import 'custom_bottom_nav.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -105,21 +106,7 @@ class CategoriesScreen extends StatelessWidget {
         ),
       ),
       // Barra de navegación inferior
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Categorías'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Settings'),
-        ],
-        onTap: (index) {
-          if (index == 1) {
-            // Navega a la pantalla de Settings
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SettingsScreen()),
-            );
-          }
-        },
-      ),
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 0),
     );
   }
 

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:project_sayit/screens/home_screen.dart';
+import 'package:project_sayit/screens/change_password_screen.dart';
+import 'package:project_sayit/screens/language_screen.dart';
+import 'package:project_sayit/screens/privacy_security_screen.dart';
+import 'custom_bottom_nav.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -9,121 +12,175 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool notificationsEnabled = false;
+  bool notificationsEnabled = true;
+
+  // --- FUNCIÓN NUEVA PARA MOSTRAR LA ALERTA ---
+  void _showEditDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Profile Edit"), // Título de la ventana
+          content: const Text("Edit bottom works"), // Mensaje
+          actions: <Widget>[
+            TextButton(
+              child: const Text("OK"),
+              onPressed: () {
+                // Cierra la ventana emergente al presionar OK
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Permite regresar a la pantalla anterior
-            Navigator.pop(context);
-          },
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // Sección de perfil de usuario
-            Center(
-              child: Column(
-                children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      const CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.orange,
-                        child: Icon(
-                          Icons.person,
-                          size: 60,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black12),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.edit, size: 20),
-                          onPressed: () {},
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Name user',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const Text(
-                    'gmail´s user',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
+      backgroundColor: const Color(0xFFFCFCFC),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 20.0,
             ),
-            const SizedBox(height: 32),
-
-            // Lista de opciones de configuración
-            ListView(
-              shrinkWrap: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ListTile(
-                  title: const Text('Change Password'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {},
+                const SizedBox(height: 20),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Color(0xFFFEEBC7),
+                      child: Icon(
+                        Icons.person_outline,
+                        size: 60,
+                        color: Color(0xFFF59E0B),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        // --- CAMBIO AQUÍ: Se llama a la función del diálogo ---
+                        onTap: () {
+                          _showEditDialog(); // Lógica para mostrar la alerta
+                        },
+                        child: const CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Color(0xFFF97316),
+                          child: Icon(
+                            Icons.edit,
+                            size: 20,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(),
-                ListTile(
-                  title: const Text('Language'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {},
+                const SizedBox(height: 16),
+                const Text(
+                  'Lucas Scott',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-                const Divider(),
-                ListTile(
-                  title: const Text('Privacy & Security'),
-                  trailing: const Icon(Icons.arrow_forward_ios),
-                  onTap: () {},
+                const SizedBox(height: 4),
+                const Text(
+                  '@lucasscott3',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
-                const Divider(),
-                ListTile(
-                  title: const Text('Notifications'),
-                  trailing: Switch(
-                    value: notificationsEnabled,
-                    onChanged: (bool value) {
-                      setState(() {
-                        notificationsEnabled = value;
-                      });
-                    },
-                  ),
-                ),
+                const SizedBox(height: 48),
+                _buildSettingsList(),
               ],
             ),
-          ],
+          ),
         ),
       ),
-      // Barra de navegación inferior
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Categorías'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Settings'),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            // Navega a la pantalla de Settings
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
+    );
+  }
+
+  Widget _buildSettingsList() {
+    return Column(
+      children: [
+        _buildSettingsItem(
+          title: 'Change Password',
+          onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+              MaterialPageRoute(
+                builder: (context) => const ChangePasswordScreen(),
+              ),
             );
-          }
+          },
+        ),
+        _buildSettingsItem(
+          title: 'Language',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const LanguageScreen()),
+            );
+          },
+        ),
+        _buildSettingsItem(
+          title: 'Privacy & Security',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PrivacySecurityScreen(),
+              ),
+            );
+          },
+        ),
+        const Divider(height: 1, color: Color(0xFFF1F1F1)),
+        _buildNotificationItem(),
+        const Divider(height: 1, color: Color(0xFFF1F1F1)),
+      ],
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        size: 16,
+        color: Colors.grey,
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildNotificationItem() {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+      title: const Text(
+        'Notifications',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+      trailing: Switch(
+        value: notificationsEnabled,
+        onChanged: (bool value) {
+          setState(() {
+            notificationsEnabled = value;
+          });
         },
+        activeColor: Colors.white,
+        activeTrackColor: const Color(0xFFF97316),
       ),
     );
   }
