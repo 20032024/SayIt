@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/settings_screen.dart';
+import 'package:project_sayit/screens/detail_screens.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -175,47 +176,57 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Espacio para la imagen
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFFFD54F),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-              ),
-              child: const Center(
-                child: Icon(Icons.image, size: 50, color: Color(0xFFC5AE79)),
+    // 💡 Aquí está el cambio. Se envuelve todo el Card con un GestureDetector
+    return GestureDetector(
+      onTap: () {
+        // 💡 Esta función se ejecuta al tocar la tarjeta
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const LessonScreen()),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Espacio para la imagen
+            Expanded(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFD54F),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+                ),
+                child: const Center(
+                  child: Icon(Icons.image, size: 50, color: Color(0xFFC5AE79)),
+                ),
               ),
             ),
-          ),
-          // Contenido de texto y barra de progreso
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Nombre',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                const Text('1/20', style: TextStyle(color: Colors.grey)),
-                const SizedBox(height: 8),
-                const LinearProgressIndicator(
-                  value: 0.05, // Valor de progreso (5%)
-                  backgroundColor: Color(0xFFF0F0F0),
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
-                  minHeight: 8,
-                ),
-              ],
+            // Contenido de texto y barra de progreso
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Nombre',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text('1/20', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  const LinearProgressIndicator(
+                    value: 0.05, // Valor de progreso (5%)
+                    backgroundColor: Color(0xFFF0F0F0),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                    minHeight: 8,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
