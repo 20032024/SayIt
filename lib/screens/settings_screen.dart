@@ -114,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const ChangePasswordScreen(),
+                builder: (context) => const ConfirmationCodeScreen(),
               ),
             );
           },
