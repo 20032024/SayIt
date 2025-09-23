@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/settings_screen.dart';
-import 'package:project_sayit/screens/detail_screens.dart';
+import 'package:project_sayit/screens/detail_screens.dart'; // Import the DetailScreen
+import 'package:project_sayit/screens/lesson_screen.dart';
 import 'custom_bottom_nav.dart';
 
 class CategoriesScreen extends StatelessWidget {
@@ -14,7 +15,7 @@ class CategoriesScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Sección de la barra de búsqueda
+            // Search bar section
             const TextField(
               decoration: InputDecoration(
                 hintText: 'Buscar',
@@ -29,7 +30,7 @@ class CategoriesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Sección de los botones de filtro
+            // Filter buttons section
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -80,24 +81,23 @@ class CategoriesScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Contenido de las categorías
+            // Categories content
             Expanded(
               child: ListView(
                 children: [
-                  // Categoría 1
                   _buildCategorySection(
                     context,
-                    title: 'Nombre Categoría',
-                    items:
-                        4, // Puedes ajustar este número para ver más o menos tarjetas
+                    title: 'Animales',
+                    items: 4,
+                    // Pass a list of words or objects for this category
+                    words: ['Cat', 'Dog', 'Lion', 'Tiger'],
                   ),
                   const SizedBox(height: 16),
-
-                  // Categoría 2
                   _buildCategorySection(
                     context,
-                    title: 'Otra Categoría',
+                    title: 'Frutas',
                     items: 4,
+                    words: ['Manzana', 'Banana', 'Naranja', 'Fresa'],
                   ),
                 ],
               ),
@@ -105,7 +105,6 @@ class CategoriesScreen extends StatelessWidget {
           ],
         ),
       ),
-      // Barra de navegación inferior
       bottomNavigationBar: const CustomBottomNav(currentIndex: 0),
     );
   }
@@ -114,6 +113,7 @@ class CategoriesScreen extends StatelessWidget {
     BuildContext context, {
     required String title,
     required int items,
+    required List<String> words, // Added words list as a parameter
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -136,20 +136,22 @@ class CategoriesScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         GridView.builder(
-          shrinkWrap:
-              true, // Importante para que funcione dentro de un ListView
-          physics:
-              const NeverScrollableScrollPhysics(), // Evita el scroll anidado
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2, // 2 columnas
+            crossAxisCount: 2,
             crossAxisSpacing: 16.0,
             mainAxisSpacing: 16.0,
-            childAspectRatio: 0.8, // Proporción de aspecto para las tarjetas
+            childAspectRatio: 0.8,
           ),
           itemCount: items,
           itemBuilder: (context, index) {
-            // Crea una tarjeta por cada elemento
-            return const CategoryCard();
+            // Pass the data to the CategoryCard
+            return CategoryCard(
+              categoryName: title,
+              progress: '1/20',
+              word: words[index],
+            );
           },
         ),
       ],
@@ -157,19 +159,35 @@ class CategoriesScreen extends StatelessWidget {
   }
 }
 
-// Widget de la tarjeta de categoría
+// CategoryCard now takes parameters for a better, dynamic flow
 class CategoryCard extends StatelessWidget {
-  const CategoryCard({super.key});
+  final String categoryName;
+  final String progress;
+  final String word;
+
+  const CategoryCard({
+    super.key,
+    required this.categoryName,
+    required this.progress,
+    required this.word,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // 💡 Aquí está el cambio. Se envuelve todo el Card con un GestureDetector
     return GestureDetector(
       onTap: () {
-        // 💡 Esta función se ejecuta al tocar la tarjeta
+        // Navigate to DetailScreen, passing the required data
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const LessonScreen()),
+          MaterialPageRoute(
+            builder: (context) => DetailScreen(
+              categoryName: categoryName,
+              progress: progress,
+              description:
+                  'This is a description for the ${categoryName.toLowerCase()} lesson.',
+              word: word,
+            ),
+          ),
         );
       },
       child: Card(
@@ -178,7 +196,7 @@ class CategoryCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Espacio para la imagen
+            // Image space
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -190,21 +208,24 @@ class CategoryCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Contenido de texto y barra de progreso
+            // Text content and progress bar
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Nombre',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    word, // Use the word here
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text('1/20', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    progress, // Use the progress here
+                    style: const TextStyle(color: Colors.grey),
+                  ),
                   const SizedBox(height: 8),
                   const LinearProgressIndicator(
-                    value: 0.05, // Valor de progreso (5%)
+                    value: 0.05,
                     backgroundColor: Color(0xFFF0F0F0),
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
                     minHeight: 8,
