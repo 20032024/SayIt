@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/signup_screen.dart'; // Importa tu pantalla de registro
-import 'package:project_sayit/screens/home_screen.dart'; // Importa la pantalla de inicio
-import 'package:project_sayit/screens/detail_screens.dart';
+import 'package:project_sayit/screens/home_screen.dart'; // Importa tu pantalla de categorías (home)
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,77 +10,187 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  // Define los colores del gradiente y el color principal del diseño
+  final Color _startGradientColor = const Color(0xFFFFCC80); // Naranja claro
+  final Color _endGradientColor = const Color(0xFFFF9800); // Naranja oscuro
+  final Color _primaryColor = const Color(0xFFFF9800);
+
+  // Controladores para los campos de texto
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Controla la visibilidad de la contraseña
+  bool _isPasswordVisible = false;
+
   @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      // Padding opcional para dar un poco de espacio alrededor de los botones.
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          // 1. Botón de Iniciar Sesión (Acción principal)
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: Colors.blue, // Color primario
-              foregroundColor: Colors.white, // Texto en blanco
-            ),
-            onPressed: () {
-              // Navega a HomeScreen y reemplaza LoginScreen en la pila de navegación.
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const CategoriesScreen(),
+    return Scaffold(
+      // Añade el gradiente de fondo a todo el Scaffold
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_startGradientColor, _endGradientColor],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              // Espacio superior para imitar la distribución del diseño
+              SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+
+              // Título de bienvenida
+              const Text(
+                '¡Bienvenido!',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              );
-              print('Botón "Iniciar Sesión" presionado, navegando a Home');
-            },
-            child: const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
-          ),
-
-          const SizedBox(height: 12),
-
-          // 2. Botón de Olvidar Contraseña (Acción secundaria)
-          TextButton(
-            onPressed: () {
-              // TODO: Navegar a la pantalla de recuperar contraseña.
-              // Ejemplo: Navigator.pushNamed(context, '/forgot-password');
-              print('Botón "¿Olvidaste tu contraseña?" presionado');
-            },
-            child: const Text('¿Olvidaste tu contraseña?'),
-          ),
-
-          const SizedBox(height: 20),
-
-          // 3. Botón de Registrarse (Acción alternativa)
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                textAlign: TextAlign.left,
               ),
-              side: const BorderSide(
-                color: Colors.blue,
-              ), // Borde del color primario
-            ),
-            // CÓDIGO CORRECTO
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RegisterScreen(),
-                ), // O el nombre de tu clase de registro
-              );
-              print('Botón "Registrarse" presionado');
-            },
-            child: const Text('Registrarse', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 48),
+
+              // Campo de Correo Electrónico
+              _buildTextField(
+                _emailController,
+                hintText: 'Correo Electrónico',
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 16),
+
+              // Campo de Contraseña
+              _buildPasswordField(_passwordController, 'Contraseña'),
+              const SizedBox(height: 24),
+
+              // Botón de Login
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: _primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  // Navega a HomeScreen y reemplaza LoginScreen en la pila de navegación.
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CategoriesScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Login',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Enlace para registrarse
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '¿Aún no tienes cuenta?',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RegisterScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      'Regístrate',
+                      style: TextStyle(
+                        color: Colors.white,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  // Widget para crear un campo de texto genérico
+  Widget _buildTextField(
+    TextEditingController controller, {
+    String hintText = '',
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Color.fromARGB(255, 150, 150, 150)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+    );
+  }
+
+  // Widget para crear un campo de contraseña con el icono del ojo
+  Widget _buildPasswordField(
+    TextEditingController controller,
+    String hintText,
+  ) {
+    return TextField(
+      controller: controller,
+      obscureText: !_isPasswordVisible,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: const TextStyle(color: Color.fromARGB(255, 150, 150, 150)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: _primaryColor, width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+            color: Colors.grey,
+          ),
+          onPressed: () {
+            setState(() {
+              _isPasswordVisible = !_isPasswordVisible;
+            });
+          },
+        ),
       ),
     );
   }
