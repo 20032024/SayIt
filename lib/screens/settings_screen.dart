@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/screens/change_password_screen.dart';
 import 'package:project_sayit/screens/language_screen.dart';
+import 'package:project_sayit/screens/login_screen.dart';
 import 'package:project_sayit/screens/privacy_security_screen.dart';
 import 'custom_bottom_nav.dart';
 
@@ -28,6 +29,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 // Cierra la ventana emergente al presionar OK
                 Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // preguntar si quiere cerrar la sesión antes de proceder.
+  void _showLogoutConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Confirm Logout"),
+          content: const Text("Are you sure you want to log out?"),
+          actions: <Widget>[
+            TextButton(
+              child: const Text("Cancel"),
+              onPressed: () {
+                // Simplemente cierra el diálogo.
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text(
+                "Logout",
+                style: TextStyle(color: Colors.red), // Estilo para la acción
+              ),
+              onPressed: () {
+                // Cierra todas las pantallas y navega a la pantalla de Login.
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (Route<dynamic> route) =>
+                      false, // Elimina todas las rutas anteriores
+                );
               },
             ),
           ],
@@ -67,7 +104,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        // --- CAMBIO AQUÍ: Se llama a la función del diálogo ---
                         onTap: () {
                           _showEditDialog(); // Lógica para mostrar la alerta
                         },
@@ -109,6 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Column(
       children: [
         _buildSettingsItem(
+          icon: Icons.lock_outline,
           title: 'Change Password',
           onTap: () {
             Navigator.push(
@@ -120,6 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         _buildSettingsItem(
+          icon: Icons.language,
           title: 'Language',
           onTap: () {
             Navigator.push(
@@ -129,6 +167,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           },
         ),
         _buildSettingsItem(
+          icon: Icons.shield_outlined,
           title: 'Privacy & Security',
           onTap: () {
             Navigator.push(
@@ -142,16 +181,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const Divider(height: 1, color: Color(0xFFF1F1F1)),
         _buildNotificationItem(),
         const Divider(height: 1, color: Color(0xFFF1F1F1)),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+          leading: const Icon(Icons.logout, color: Colors.red),
+          title: const Text(
+            'Logout',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.red,
+            ),
+          ),
+          onTap: _showLogoutConfirmationDialog,
+        ),
       ],
     );
   }
 
   Widget _buildSettingsItem({
+    required IconData icon,
     required String title,
     required VoidCallback onTap,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+      leading: Icon(icon, color: const Color(0xFF374151)),
       title: Text(
         title,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
@@ -168,6 +222,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildNotificationItem() {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(vertical: 8.0),
+      leading: const Icon(
+        Icons.notifications_outlined,
+        color: Color(0xFF374151),
+      ),
       title: const Text(
         'Notifications',
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
