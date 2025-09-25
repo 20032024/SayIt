@@ -74,7 +74,12 @@ class _ConfirmationCodeScreenState extends State<ConfirmationCodeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: const Icon(Icons.arrow_back),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
         title: const Text(
           "Settings",
           style: TextStyle(fontWeight: FontWeight.bold),
