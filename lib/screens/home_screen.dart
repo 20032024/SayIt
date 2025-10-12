@@ -3,6 +3,10 @@ import 'package:project_sayit/screens/settings_screen.dart';
 import 'package:project_sayit/screens/detail_screens.dart'; // Import the DetailScreen
 import 'package:project_sayit/screens/lesson_screen.dart';
 import 'custom_bottom_nav.dart';
+import 'package:project_sayit/models/subcategorie_model.dart';
+import 'package:project_sayit/models/categorie_model.dart';
+import 'package:project_sayit/models/lesson_item_model.dart';
+import 'package:project_sayit/data/data_categories.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -82,24 +86,14 @@ class CategoriesScreen extends StatelessWidget {
             const SizedBox(height: 16),
 
             // Categories content
+            // ----- ✅ AÑADE ESTE NUEVO WIDGET EN SU LUGAR ✅ -----
             Expanded(
-              child: ListView(
-                children: [
-                  _buildCategorySection(
-                    context,
-                    title: 'Animales',
-                    items: 4,
-                    // Pass a list of words or objects for this category
-                    words: ['Cat', 'Dog', 'Lion', 'Tiger'],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCategorySection(
-                    context,
-                    title: 'Frutas',
-                    items: 4,
-                    words: ['Manzana', 'Banana', 'Naranja', 'Fresa'],
-                  ),
-                ],
+              child: ListView.builder(
+                itemCount: categoriasData.length,
+                itemBuilder: (context, index) {
+                  final categoria = categoriasData[index];
+                  return _buildCategorySection(context, categoria: categoria);
+                },
               ),
             ),
           ],
@@ -109,11 +103,35 @@ class CategoriesScreen extends StatelessWidget {
     );
   }
 
+  // ----- ✅ AÑADE ESTOS DOS NUEVOS MÉTODOS ✅ -----
+
+  // 1. Este método crea la sección de la CATEGORÍA PRINCIPAL (ej: "Animales")
   Widget _buildCategorySection(
     BuildContext context, {
-    required String title,
-    required int items,
-    required List<String> words, // Added words list as a parameter
+    required Categoria categoria,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+          child: Text(
+            categoria.titulo,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+        ),
+        // Crea una lista de widgets de SubCategoría a partir de los datos
+        ...categoria.subCategorias.map((subCategoria) {
+          return _buildSubCategorySection(context, subCategoria: subCategoria);
+        }).toList(),
+      ],
+    );
+  }
+
+  // 2. Este método crea la sección de la SUBCATEGORÍA (ej: "Domésticos")
+  Widget _buildSubCategorySection(
+    BuildContext context, {
+    required SubCategoria subCategoria,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -122,7 +140,7 @@ class CategoriesScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              title,
+              subCategoria.titulo,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             TextButton(
@@ -144,59 +162,64 @@ class CategoriesScreen extends StatelessWidget {
             mainAxisSpacing: 16.0,
             childAspectRatio: 0.8,
           ),
-          itemCount: items,
+          itemCount: subCategoria.lecciones.length,
           itemBuilder: (context, index) {
-            // Pass the data to the CategoryCard
+            final lessonItem = subCategoria.lecciones[index];
             return CategoryCard(
-              categoryName: title,
-              progress: '1/20',
-              word: words[index],
+              subCategoria: subCategoria,
+              lessonItem: lessonItem,
             );
           },
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
 }
 
-// CategoryCard now takes parameters for a better, dynamic flow
+// ----- ✅ Y AÑADE ESTA NUEVA VERSIÓN EN SU LUGAR ✅ -----
 class CategoryCard extends StatelessWidget {
-  final String categoryName;
-  final String progress;
-  final String word;
+  // ✅ CORREGIDO: Ahora está en singular
+  final SubCategoria subCategoria;
+  final LessonItem lessonItem;
 
   const CategoryCard({
     super.key,
-    required this.categoryName,
-    required this.progress,
-    required this.word,
+    // ✅ CORREGIDO: El constructor también está en singular
+    required this.subCategoria,
+    required this.lessonItem,
   });
 
   @override
   Widget build(BuildContext context) {
+    // ✅ AHORA FUNCIONA: Porque la variable 'subCategoria' sí existe
+    final String progressText =
+        '${subCategoria.progresoActual}/${subCategoria.progresoTotal}';
+    final double progressValue =
+        subCategoria.progresoActual / subCategoria.progresoTotal;
+
     return GestureDetector(
       onTap: () {
-        // Navigate to DetailScreen, passing the required data
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => DetailScreen(
-              categoryName: categoryName,
-              progress: progress,
-              description:
-                  'This is a description for the ${categoryName.toLowerCase()} lesson.',
-              word: word,
+              // ✅ AHORA FUNCIONA
+              categoryName: subCategoria.titulo,
+              progress: progressText,
+              description: lessonItem.descripcion,
+              word: lessonItem.palabra,
             ),
           ),
         );
       },
       child: Card(
+        // ... El resto de tu código del Card se queda igual ...
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image space
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -208,26 +231,27 @@ class CategoryCard extends StatelessWidget {
                 ),
               ),
             ),
-            // Text content and progress bar
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    word, // Use the word here
+                    lessonItem.palabra,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    progress, // Use the progress here
+                    progressText,
                     style: const TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 8),
-                  const LinearProgressIndicator(
-                    value: 0.05,
-                    backgroundColor: Color(0xFFF0F0F0),
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                  LinearProgressIndicator(
+                    value: progressValue,
+                    backgroundColor: const Color(0xFFF0F0F0),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.orange,
+                    ),
                     minHeight: 8,
                   ),
                 ],
