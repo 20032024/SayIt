@@ -17,7 +17,8 @@ final List<Categoria> categoriasData = [
         lecciones: [
           LessonItem(
             palabra: 'Gato',
-            imagenUrl: 'assets/images/cat.png',
+            imagenUrl:
+                '/Users/arturoluuna/project-sayit/frontend-sayit/project_sayit/assets/images/oliver.jpeg',
             descripcion: '...',
           ),
           LessonItem(

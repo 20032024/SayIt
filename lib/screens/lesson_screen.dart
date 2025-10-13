@@ -133,21 +133,22 @@ class _LessonScreenState extends State<LessonScreen> {
 
   // --- TUS WIDGETS AUXILIARES (¡INTACTOS!) ---
   Widget _buildImageCard({required String imageUrl}) {
-    // Ahora puedes usar la URL de la imagen, aunque por ahora la dejamos con el ícono
     return Container(
       width: double.infinity,
       height: 250,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFC673),
+      // ClipRRect asegura que la imagen tenga los bordes redondeados
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16.0),
-        // Podrías descomentar esto si tienes las imágenes en tus assets:
-        // image: DecorationImage(
-        //   image: AssetImage(imageUrl),
-        //   fit: BoxFit.cover,
-        // ),
-      ),
-      child: const Center(
-        child: Icon(Icons.image, size: 64, color: Colors.white),
+        child: Image.asset(
+          imageUrl, // ✅ Usa la ruta del modelo directamente
+          fit: BoxFit.cover, // Hace que la imagen cubra todo el espacio
+          // Manejo de errores por si la imagen no se encuentra
+          errorBuilder: (context, error, stackTrace) {
+            return const Center(
+              child: Icon(Icons.error_outline, color: Colors.white, size: 64),
+            );
+          },
+        ),
       ),
     );
   }
