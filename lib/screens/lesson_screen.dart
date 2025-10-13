@@ -1,44 +1,62 @@
 import 'package:flutter/material.dart';
+// ✅ 1. Importa los modelos que necesitas
+import 'package:project_sayit/models/subcategorie_model.dart';
+import 'package:project_sayit/models/lesson_item_model.dart';
 import 'evaluation_dialog.dart';
-// --- PANTALLA DE RESULTADOS (EJEMPLO) ---
-class ResultsScreen extends StatelessWidget {
-  const ResultsScreen({super.key});
+
+// ✅ 2. Convierte la clase en un StatefulWidget
+class LessonScreen extends StatefulWidget {
+  // Ahora recibe el objeto SubCategoria completo
+  final SubCategoria subCategoria;
+
+  const LessonScreen({super.key, required this.subCategoria});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Resultados')),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          child: const Text('Volver a la Lección'),
-        ),
-      ),
-    );
-  }
+  State<LessonScreen> createState() => _LessonScreenState();
 }
 
-// --- PANTALLA DE LA LECCIÓN (CON PARÁMETROS) ---
-class LessonScreen extends StatelessWidget {
-  // Los parámetros de la categoría y la palabra
-  final String categoryName;
-  final String word;
+// ✅ 3. Crea la clase State que manejará los cambios
+class _LessonScreenState extends State<LessonScreen> {
+  // --- AQUÍ ESTÁ LA MAGIA ---
+  // Esta variable "recuerda" la posición de la palabra actual
+  int _currentIndex = 0;
 
-  const LessonScreen({
-    super.key,
-    required this.categoryName,
-    required this.word,
-  });
+  // Método para ir a la siguiente palabra
+  void _siguientePalabra() {
+    // Si no hemos llegado al final de la lista...
+    if (_currentIndex < widget.subCategoria.lecciones.length - 1) {
+      // setState() le dice a Flutter que redibuje la pantalla con el nuevo índice
+      setState(() {
+        _currentIndex++;
+      });
+    } else {
+      // Opcional: Si es la última palabra, mostramos el diálogo de evaluación
+      showEvaluationDialog(context);
+    }
+  }
+
+  // Método para ir a la palabra anterior
+  void _anteriorPalabra() {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+      });
+    }
+  }
+  // --- FIN DE LA LÓGICA DE ESTADO ---
 
   @override
   Widget build(BuildContext context) {
+    // ✅ 4. Obtenemos la lección actual usando el _currentIndex
+    final LessonItem leccionActual =
+        widget.subCategoria.lecciones[_currentIndex];
+
     return Scaffold(
       appBar: AppBar(
         leading: const LessonBackButton(),
+        // Usamos el título de la subcategoría que recibimos
         title: Text(
-          categoryName, // Usa el parámetro de categoría
+          widget.subCategoria.titulo,
           style: const TextStyle(color: Colors.black),
         ),
         centerTitle: true,
@@ -51,12 +69,14 @@ class LessonScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 24),
+            // Mostramos la palabra de la lección actual
             Text(
-              word, // Usa el parámetro de la palabra
+              leccionActual.palabra,
               style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 48),
-            _buildImageCard(),
+            // Aquí podrías usar la imagen de leccionActual.imagenUrl
+            _buildImageCard(imageUrl: leccionActual.imagenUrl),
             const SizedBox(height: 48),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -64,20 +84,46 @@ class LessonScreen extends StatelessWidget {
                 _buildActionButton(
                   icon: Icons.volume_up,
                   onPressed: () {
-                    print('Botón de audio presionado para: $word');
+                    print(
+                      'Botón de audio presionado para: ${leccionActual.palabra}',
+                    );
                   },
                 ),
                 const SizedBox(width: 48),
                 _buildActionButton(
                   icon: Icons.mic,
                   onPressed: () {
-                    print('Botón de micrófono presionado para: $word');
+                    print(
+                      'Botón de micrófono presionado para: ${leccionActual.palabra}',
+                    );
                   },
                 ),
               ],
             ),
             const Spacer(),
-            const SubmitLessonButton(),
+            // ✅ 5. Botones para navegar en la lección
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Botón para retroceder, se deshabilita si es la primera palabra
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  iconSize: 32,
+                  onPressed: _currentIndex > 0 ? _anteriorPalabra : null,
+                ),
+                // Muestra el progreso actual
+                Text(
+                  '${_currentIndex + 1} / ${widget.subCategoria.lecciones.length}',
+                  style: const TextStyle(fontSize: 18),
+                ),
+                // Botón para avanzar o finalizar
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  iconSize: 32,
+                  onPressed: _siguientePalabra,
+                ),
+              ],
+            ),
             const SizedBox(height: 48),
           ],
         ),
@@ -85,14 +131,20 @@ class LessonScreen extends StatelessWidget {
     );
   }
 
-  // Los widgets auxiliares se mantienen iguales
-  Widget _buildImageCard() {
+  // --- TUS WIDGETS AUXILIARES (¡INTACTOS!) ---
+  Widget _buildImageCard({required String imageUrl}) {
+    // Ahora puedes usar la URL de la imagen, aunque por ahora la dejamos con el ícono
     return Container(
       width: double.infinity,
       height: 250,
       decoration: BoxDecoration(
         color: const Color(0xFFFFC673),
         borderRadius: BorderRadius.circular(16.0),
+        // Podrías descomentar esto si tienes las imágenes en tus assets:
+        // image: DecorationImage(
+        //   image: AssetImage(imageUrl),
+        //   fit: BoxFit.cover,
+        // ),
       ),
       child: const Center(
         child: Icon(Icons.image, size: 64, color: Colors.white),

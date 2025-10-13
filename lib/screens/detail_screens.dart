@@ -1,22 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:project_sayit/screens/lesson_screen.dart'; // Importa LessonScreen
+import 'package:project_sayit/models/subcategorie_model.dart'; // ✅ Importa el modelo
+import 'package:project_sayit/screens/lesson_screen.dart';
 
-// --- PANTALLA DE DETALLE (PUNTO DE PARTIDA) ---
 class DetailScreen extends StatelessWidget {
-  // Ahora la pantalla de detalle también acepta parámetros para ser dinámica.
-  final String categoryName;
-  final String progress;
-  final String description;
-  final String
-  word; // 💡 ¡Importante! Necesitamos la palabra para pasarla a la siguiente pantalla.
+  // ✅ Ahora recibe el objeto SubCategoria completo
+  final SubCategoria subCategoria;
 
-  const DetailScreen({
-    super.key,
-    required this.categoryName,
-    required this.progress,
-    required this.description,
-    required this.word,
-  });
+  const DetailScreen({super.key, required this.subCategoria});
 
   @override
   Widget build(BuildContext context) {
@@ -102,13 +92,15 @@ class DetailScreen extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ✅ Usa el título del modelo
             Text(
-              categoryName,
+              subCategoria.titulo,
               style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
+            // ✅ Calcula el progreso desde el modelo
             Text(
-              progress,
+              '${subCategoria.progresoActual}/${subCategoria.progresoTotal} lecciones',
               style: const TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
@@ -135,7 +127,7 @@ class DetailScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          description,
+          subCategoria.descripcion,
           style: const TextStyle(fontSize: 16, color: Color(0xFF616161)),
         ),
       ],
@@ -146,45 +138,33 @@ class DetailScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          // 💡 Aquí se pasan los parámetros a StartLessonButton.
-          child: StartLessonButton(categoryName: categoryName, word: word),
-        ),
+        // ✅ Pasa el objeto completo al botón
+        Expanded(child: StartLessonButton(subCategoria: subCategoria)),
       ],
     );
   }
 }
 
 // Botón para comenzar la lección
+// El botón ahora recibe el objeto SubCategoria
 class StartLessonButton extends StatelessWidget {
-  // 💡 El orden de la declaración es importante. Las variables de la clase van primero.
-  final String categoryName;
-  final String word;
+  final SubCategoria subCategoria;
 
-  const StartLessonButton({
-    super.key,
-    required this.categoryName,
-    required this.word,
-  });
+  const StartLessonButton({super.key, required this.subCategoria});
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () {
+        // ✅ Pasa el objeto completo a LessonScreen
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                LessonScreen(categoryName: categoryName, word: word),
+            builder: (context) => LessonScreen(subCategoria: subCategoria),
           ),
         );
-        print('Avanzando a la pantalla de lección...');
       },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF18F42),
-        padding: const EdgeInsets.symmetric(vertical: 16.0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-      ),
+      style: ElevatedButton.styleFrom(/* ... tu estilo ... */),
       child: const Text(
         'Comenzar lección',
         style: TextStyle(
