@@ -10,6 +10,8 @@ final List<Categoria> categoriasData = [
       // --- SubCategoría 1.1 ---
       SubCategoria(
         titulo: 'Domésticos',
+        descripcion:
+            'Aprende sobre los animales que viven cerca de nosotros, desde mascotas comunes hasta animales de granja.',
         progresoActual: 5,
         progresoTotal: 10,
         lecciones: [
@@ -33,6 +35,8 @@ final List<Categoria> categoriasData = [
       // --- SubCategoría 1.2 ---
       SubCategoria(
         titulo: 'Salvajes',
+        descripcion:
+            'Aprende sobre los animales que viven cerca de nosotros, desde mascotas comunes hasta animales de granja.',
         progresoActual: 1,
         progresoTotal: 20,
         lecciones: [
@@ -67,6 +71,8 @@ final List<Categoria> categoriasData = [
       // --- SubCategoría 2.1 ---
       SubCategoria(
         titulo: 'Cítricas',
+        descripcion:
+            'Aprende sobre los animales que viven cerca de nosotros, desde mascotas comunes hasta animales de granja.',
         progresoActual: 2,
         progresoTotal: 5,
         lecciones: [
