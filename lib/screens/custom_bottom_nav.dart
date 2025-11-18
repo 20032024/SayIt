@@ -21,7 +21,7 @@ class CustomBottomNav extends StatelessWidget {
         if (index == 0) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
           );
         } else if (index == 1) {
           Navigator.pushReplacement(
