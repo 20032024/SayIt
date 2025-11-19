@@ -38,12 +38,12 @@ class WelcomeScreen extends StatelessWidget {
                   onTap: () {
                     // Aquí va la acción, por ejemplo:
                     // Navigator.pushNamed(context, '/resnet');
-                     Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CamaraScreen(),
-                    ),
-                  );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CamaraScreen(),
+                      ),
+                    );
                   },
                   child: Column(
                     children: [
@@ -85,6 +85,8 @@ class WelcomeScreen extends StatelessWidget {
           ),
         ),
       ),
+      // navbar
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 0),
     );
   }
 }
