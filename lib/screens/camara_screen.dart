@@ -118,9 +118,9 @@ class _CamaraScreenState extends State<CamaraScreen> {
     }
   }
 
-// ⚙️ FUNCIÓN: Preprocesar imagen (CORRECCIÓN FINAL Y LIMPIA)
-  /// Convierte la imagen a 300x300 en escala de grises y luego a una lista de píxeles normalizados.
-  Future<List<double>> _processImage(File imageFile) async {
+// ⚙️ FUNCIÓN: Preprocesar imagen (CORRECCIÓN A 3D)
+  /// Convierte la imagen a 300x300 en escala de grises y luego a una lista de píxeles normalizados 3D.
+  Future<List<List<List<double>>>> _processImage(File imageFile) async {
     final imageBytes = await imageFile.readAsBytes();
     img.Image? originalImage = img.decodeImage(imageBytes);
 
@@ -128,31 +128,31 @@ class _CamaraScreenState extends State<CamaraScreen> {
       throw Exception("No se pudo decodificar la imagen.");
     }
 
-    // Redimensionar a 300x300
-    img.Image resizedImage = img.copyResize(originalImage, width: 300, height: 300);
-
-    // Convertir a escala de grises
+    // Redimensionar y convertir a escala de grises (300x300x1)
+    img.Image resizedImage = img.copyResize(
+      originalImage,
+      width: 300,
+      height: 300,
+    );
     img.Image grayscaleImage = img.grayscale(resizedImage);
 
-    // Normalizar y aplanar en una lista [300 * 300 * 1]
-    List<double> normalizedPixels = [];
-    for (int y = 0; y < grayscaleImage.height; y++) {
-      for (int x = 0; x < grayscaleImage.width; x++) {
-        
-        // Obtenemos el objeto Pixel
-        // Usaremos getPixelSafe para compatibilidad
-        final pixel = grayscaleImage.getPixelSafe(x, y); 
-        
-        // CORRECCIÓN FINAL: Acceder al canal de color (Red) directamente desde el objeto Pixel.
-        // Como la imagen es grayscale, pixel.r (o .g, .b) dará el valor de intensidad (0-255).
-        final grayValue = pixel.r;
+    // Estructurar como tensor 3D: [Height, Width, Channel] -> [300, 300, 1]
+    List<List<List<double>>> tensor3D = List.generate(
+      grayscaleImage.height, // 300
+      (y) => List.generate(
+        grayscaleImage.width, // 300
+        (x) {
+          final pixel = grayscaleImage.getPixelSafe(x, y);
+          final grayValue = pixel.r;
+          final normalizedValue = grayValue / 255.0;
 
-        // Normalizar (dividir por 255.0)
-        normalizedPixels.add(grayValue / 255.0);
-      }
-    }
+          // Retorna una lista con un solo elemento para el canal: [1]
+          return [normalizedValue];
+        },
+      ),
+    );
 
-    return normalizedPixels;
+    return tensor3D; // Retorna la estructura [300, 300, 1]
   }
 
   // ⚡ FUNCIÓN: Enviar JSON al servidor con carga de index.json real
