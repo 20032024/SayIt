@@ -12,7 +12,7 @@ class CustomBottomNav extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.apps), label: 'Categorías'),
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Settings'),
       ],
       onTap: (index) {
@@ -21,7 +21,7 @@ class CustomBottomNav extends StatelessWidget {
         if (index == 0) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
           );
         } else if (index == 1) {
           Navigator.pushReplacement(
