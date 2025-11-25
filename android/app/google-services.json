@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "869244748210",
+    "firebase_url": "https://snap-sign-1736a-default-rtdb.firebaseio.com",
+    "project_id": "snap-sign-1736a",
+    "storage_bucket": "snap-sign-1736a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869244748210:android:c530afc4f375af0d1f64ab",
+        "android_client_info": {
+          "package_name": "com.ander.snapsign"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxhT6Tm4PxxspdGujtwGn1iGLbfUoOQ6U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
