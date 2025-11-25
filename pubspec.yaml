@@ -36,9 +36,10 @@ dependencies:
   path: ^1.8.3
   image: ^4.2.0 
   http: ^1.5.0
-  firebase_core: # Ya deberías tener esta
-  firebase_auth: ^5.0.0 # Asegúrate de tener una versión reciente
+  firebase_core: ^4.2.1   
+  firebase_auth: ^6.1.2   
   google_sign_in: ^6.2.1
+  cloud_firestore: ^6.1.0 # Permite guardar datos de usuario
 
   flutter_localizations: # Añade esta línea
     sdk: flutter

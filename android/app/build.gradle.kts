@@ -73,7 +73,7 @@ dependencies {
     
     // Agrega las dependencias de los productos de Firebase que usarás:
     // Para Autenticación (Auth)
-    implementation("com.google.firebase:firebase-auth-ktx") 
+    implementation("com.google.firebase:firebase-auth") 
     
     // Si planeas usar Firestore/Realtime Database, también las agregas aquí.
 }
