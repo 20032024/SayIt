@@ -8,6 +8,9 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+
+    id("com.google.gms.google-services")
+
 }
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
@@ -62,4 +65,15 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Import the Firebase BoM (Bill of Materials)
+    implementation(platform("com.google.firebase:firebase-bom:33.0.0")) 
+    
+    // Agrega las dependencias de los productos de Firebase que usarás:
+    // Para Autenticación (Auth)
+    implementation("com.google.firebase:firebase-auth-ktx") 
+    
+    // Si planeas usar Firestore/Realtime Database, también las agregas aquí.
 }
