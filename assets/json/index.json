@@ -1,14 +1,22 @@
 {
     "0": [
-        "20 km",
-        "veinte kilimetros"
+        "11",
+        "Right-of-way at intersection"
     ],
     "1": [
-        "30 km",
-        "Treinta kilometros"
+        "12",
+        "Priority road"
     ],
     "2": [
-        "50 km",
-        "Cincuenta kilometros"
+        "14",
+        "Stop"
+    ],
+    "3": [
+        "3",
+        "Speed limit (60km/h)"
+    ],
+    "4": [
+        "8",
+        "Speed limit (120km/h)"
     ]
 }
