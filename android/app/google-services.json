@@ -13,7 +13,28 @@
           "package_name": "com.ander.snapsign"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "869244748210-9sf2035m1vavaa2d2ec1g7v3ff9ices3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ander.snapsign",
+            "certificate_hash": "5e237c19428186e4eadb80971666109c009ea2dc"
+          }
+        },
+        {
+          "client_id": "869244748210-bcob75td5ueaspdpuj2epv9ecoo7o5hi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ander.snapsign",
+            "certificate_hash": "fee6363fe0e640c5885500c1249895baac09ca2c"
+          }
+        },
+        {
+          "client_id": "869244748210-ik2i4lkigcm0jq8p0v58g8r844euk7n8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDxhT6Tm4PxxspdGujtwGn1iGLbfUoOQ6U"
@@ -21,7 +42,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "869244748210-ik2i4lkigcm0jq8p0v58g8r844euk7n8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
