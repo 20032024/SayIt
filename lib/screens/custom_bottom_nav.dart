@@ -14,7 +14,7 @@ class CustomBottomNav extends StatelessWidget {
       currentIndex: currentIndex,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.lock_clock), label: 'History'),
+        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'History'),
         BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Settings'),
       ],
       onTap: (index) {

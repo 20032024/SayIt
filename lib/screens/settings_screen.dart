@@ -137,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
+      bottomNavigationBar: const CustomBottomNav(currentIndex: 2),
     );
   }
 
