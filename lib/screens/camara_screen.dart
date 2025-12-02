@@ -10,8 +10,9 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img; // Paquete de preprocesamiento
 import 'package:project_sayit/app_styles.dart'; // <--- ESTA LÍNEA
 import 'dart:ui' as ui;
-// Constante de estilo simple (reemplaza con tu archivo app_styles.dart si lo tienes)
-//const TextStyle kBodyTextStyle = TextStyle(fontSize: 16);
+import 'package:project_sayit/models/signal_description.dart';
+import 'package:project_sayit/screens/detail_screen.dart';
+import 'package:project_sayit/models/signal_description.dart';
 
 class CamaraScreen extends StatefulWidget {
   const CamaraScreen({super.key});
@@ -228,6 +229,23 @@ class _CamaraScreenState extends State<CamaraScreen> {
           classResultPrediction = "Clase no encontrada para ID: $maxIndex";
         }
 
+        // 🔥 NUEVO: Si la probabilidad es mayor al 70% -> Navegar a detalles
+        if (maxProb > 0.70 && classResultEntry != null) {
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SignalDetailScreen(
+                  signalId: classResultEntry[0].toString(),
+                  signalName: classResultEntry[1].toString(),
+                  imageFile: imageFile, // enviamos la imagen capturada
+                ),
+              ),
+            );
+          }
+          // Regresamos un texto corto solo para el debug
+          return "Señal detectada!";
+        }
         return "Predicción Exitosa:\nID del Modelo: $maxIndex\nProbabilidad Máxima: ${maxProb.toStringAsFixed(4)}\nResultado: $classResultPrediction";
       } else {
         return "Error del Servidor: ${res.statusCode}. Cuerpo: ${res.body}";
@@ -239,143 +257,107 @@ class _CamaraScreenState extends State<CamaraScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Deshabilitar botones si está prediciendo
-    final bool buttonsDisabled = _isPredicting || !_isCameraInitialized;
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detector de Señales'),
-        backgroundColor: Colors.orange,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // 📸 Vista de la Cámara o Imagen Seleccionada
-            Container(
-              height: 350,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                border: Border.all(color: Colors.blueGrey),
-                borderRadius: BorderRadius.circular(8.0),
-              ),
+      backgroundColor: const Color(0xFF0D1B2A),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
               child: _image != null
                   ? Image.file(_image!, fit: BoxFit.cover)
-                  : _isCameraInitialized && _controller != null
-                  ? AspectRatio(
-                      aspectRatio: _controller!.value.aspectRatio,
-                      child: CameraPreview(_controller!),
-                    )
-                  : const Center(child: Text('Cargando cámara...')),
-            ),
-            const SizedBox(height: 20),
-
-            // 🔘 Botones de Acción
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                ElevatedButton.icon(
-                  onPressed: buttonsDisabled
-                      ? null
-                      : _takePicture, // Deshabilitar si predice
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Tomar Foto'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-
-                // Botón Voltear Cámara (Centro)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12.0),
-                  child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.4),
-                        ),
-                      ),
-                      child: InkWell(
-                        onTap: buttonsDisabled
-                            ? null
-                            : _switchCamera, // Deshabilitar si predice
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.cameraswitch, color: Colors.white),
-                            SizedBox(width: 8),
-                            Text(
-                              'Voltear',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
+                  : (_isCameraInitialized
+                        ? CameraPreview(_controller!)
+                        : const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.orange,
                             ),
-                          ],
+                          )),
+            ),
+
+            // Botón retomar foto
+            if (_image != null)
+              Positioned(
+                top: 20,
+                left: 20,
+                child: FloatingActionButton(
+                  mini: true,
+                  backgroundColor: Colors.black54,
+                  onPressed: () {
+                    setState(() {
+                      _image = null;
+                      _predictionResult = "";
+                    });
+                  },
+                  child: const Icon(Icons.refresh, color: Colors.white),
+                ),
+              ),
+
+            // Controles inferiores
+            Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Column(
+                children: [
+                  // Indicador del estado de predicción
+                  if (_isPredicting)
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orange,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        "Analizando...",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+
+                  const SizedBox(height: 14),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.cameraswitch,
+                          color: Colors.white,
+                        ),
+                        iconSize: 34,
+                        onPressed: _switchCamera,
+                      ),
+
+                      GestureDetector(
+                        onTap: _takePicture,
+                        child: Container(
+                          width: 75,
+                          height: 75,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            size: 35,
+                            color: Colors.black,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
 
-                ElevatedButton.icon(
-                  onPressed: buttonsDisabled
-                      ? null
-                      : _pickImage, // Deshabilitar si predice
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text('Galería'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-
-            // 📰 Área de Resultado de la Predicción
-            Text(
-              'Resultado de la Predicción:',
-              style: kBodyTextStyle.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            const Divider(),
-            Container(
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: _isPredicting
-                    ? Colors.yellow.shade100
-                    : Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8.0),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: _isPredicting
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Colors.orange),
-                    ) // Indicador de carga visible
-                  : Text(
-                      _predictionResult,
-                      style: kBodyTextStyle.copyWith(
-                        color: Colors.blue.shade800,
+                      IconButton(
+                        icon: const Icon(
+                          Icons.photo_library,
+                          color: Colors.white,
+                        ),
+                        iconSize: 34,
+                        onPressed: _pickImage,
                       ),
-                    ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
