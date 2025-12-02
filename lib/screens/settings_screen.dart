@@ -3,6 +3,7 @@ import 'package:project_sayit/screens/change_password_screen.dart';
 import 'package:project_sayit/screens/language_screen.dart';
 import 'package:project_sayit/screens/login_screen.dart';
 import 'package:project_sayit/screens/privacy_security_screen.dart';
+import 'package:project_sayit/screens/about_us_screen.dart';
 import 'custom_bottom_nav.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -178,6 +179,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           },
         ),
+
+        _buildSettingsItem(
+          icon: Icons.info_outline, // Icono de información
+          title: 'About Us',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AboutUsScreen(),
+              ),
+            );
+          },
+        ),
+
         const Divider(height: 1, color: Color(0xFFF1F1F1)),
         _buildNotificationItem(),
         const Divider(height: 1, color: Color(0xFFF1F1F1)),
