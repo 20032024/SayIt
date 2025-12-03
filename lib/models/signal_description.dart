@@ -22,12 +22,22 @@ final Map<String, Map<String, String>> signalDetails = {
         "El vehículo debe frenar totalmente antes de la línea o cruce, y avanzar solo "
         "cuando esté seguro de que no hay peligro.",
   },
-  "3": {
-    "title": "Speed limit (60km/h)",
-    "meaning": "Establece una velocidad máxima de 60 km/h.",
+  "17": {
+    "title": "No entry",
+    "meaning": "El conductor no debe pasar.",
     "description":
-        "Superar esta velocidad está prohibido. Se usa en zonas que requieren reducir riesgos "
-        "por tránsito frecuente o intersecciones cercanas.",
+        "EL conductor tiene la obligación de no tomar esa dirección, "
+        "ya sea por vías alternas o algún inconveniente. ",
+  },
+  "40": {
+    "title": "Mandatory roundabout",
+    "meaning":
+        "El conductor debe circular obligatoriamente en el sentido de las flechas.",
+    "description":
+        "Esta señalización indica a los conductores la obligación de "
+        "circular en el sentido de las flechas, normalmente alrededor de "
+        "una glorieta, rotonda o isleta central. Es una señal de sentido "
+        "obligatorio. ",
   },
   "8": {
     "title": "Speed limit (120km/h)",

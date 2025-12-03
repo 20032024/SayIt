@@ -8,11 +8,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img; // Paquete de preprocesamiento
-import 'package:project_sayit/app_styles.dart'; // <--- ESTA LÍNEA
-import 'dart:ui' as ui;
+import 'package:project_sayit/app_styles.dart';
+import 'package:project_sayit/auth/database_service.dart';
+import 'dart:ui' as ui; // Importación necesaria para ImageFilter
 import 'package:project_sayit/models/signal_description.dart';
 import 'package:project_sayit/screens/detail_screen.dart';
-import 'package:project_sayit/models/signal_description.dart';
 
 class CamaraScreen extends StatefulWidget {
   const CamaraScreen({super.key});
@@ -31,12 +31,9 @@ class _CamaraScreenState extends State<CamaraScreen> {
 
   // 1. Datos de la API para el endpoint de predicción
   final url = Uri.parse(
-    "https://tensorflow-signs-model-latest.onrender.com/v1/models/signs-model:predict",
+    "https://tensorflow-serving-snapsign-1-0.onrender.com/v1/models/snapsign_model:predict",
   );
   final headers = {"Content-Type": "application/json;charset=UTF-8"};
-
-  // La variable de simulación (_simulatedIndexJson) ha sido eliminada.
-  // Ahora cargaremos el index.json real en la función de envío.
 
   @override
   void initState() {
@@ -73,15 +70,20 @@ class _CamaraScreenState extends State<CamaraScreen> {
 
   // 📸 Lógica para tomar foto
   Future<void> _takePicture() async {
-    // 1. Validaciones iniciales
-    if (!_isCameraInitialized ||
-        _controller == null ||
-        _controller!.value.isTakingPicture ||
-        _isPredicting) {
+    // 1. Validaciones iniciales MÁS FUERTES
+    if (!_isCameraInitialized || _controller == null || _isPredicting) {
       return;
     }
 
-    // 2. ⚠️ NUEVA VERIFICACIÓN CRÍTICA: Asegurarse de que la vista previa está activa.
+    // ⚠️ NUEVO: Asegurarse de que la cámara no está ocupada tomando una foto.
+    if (_controller!.value.isTakingPicture) {
+      setState(() {
+        _predictionResult = 'La cámara está ocupada, espere un momento.';
+      });
+      return;
+    }
+
+    // ⚠️ VERIFICACIÓN CRÍTICA: Vista previa activa.
     if (!_controller!.value.isInitialized) {
       setState(() {
         _predictionResult = 'La cámara no está lista. Intente de nuevo.';
@@ -96,35 +98,45 @@ class _CamaraScreenState extends State<CamaraScreen> {
         _predictionResult = 'Enviando imagen para predicción...';
       });
 
-      // 4. Tomar la foto (aquí es donde fallaba)
+      // 4. Tomar la foto (el await es CRÍTICO aquí)
       final XFile file = await _controller!.takePicture();
       final tempImage = File(file.path);
 
       // 5. Actualizar la imagen y procesar
-      setState(() {
-        _image = tempImage;
-      });
+      if (mounted) {
+        setState(() {
+          _image = tempImage;
+        });
+      }
 
       // 6. Llamar a la función de envío al servidor
       final result = await _enviarImagenAlServidorJson(tempImage);
 
       // 7. Finalizar carga y mostrar resultado
-      setState(() {
-        _predictionResult = result;
-        _isPredicting = false;
-      });
+      if (mounted) {
+        setState(() {
+          _predictionResult = result;
+          _isPredicting = false;
+        });
+      }
     } on CameraException catch (e) {
       // Capturamos específicamente el error de la cámara
-      setState(() {
-        _isPredicting = false;
-        _predictionResult = 'Error de Cámara al tomar la foto: ${e.code}';
-      });
+      print('CameraException: ${e.code}');
+      if (mounted) {
+        setState(() {
+          _isPredicting = false;
+          _predictionResult = 'Error de Cámara al tomar la foto: ${e.code}';
+        });
+      }
     } catch (e) {
       // Capturamos cualquier otro error
-      setState(() {
-        _isPredicting = false;
-        _predictionResult = 'Error desconocido: $e';
-      });
+      print('Error desconocido en _takePicture: $e');
+      if (mounted) {
+        setState(() {
+          _isPredicting = false;
+          _predictionResult = 'Error desconocido: $e';
+        });
+      }
     }
   }
 
@@ -155,7 +167,6 @@ class _CamaraScreenState extends State<CamaraScreen> {
   }
 
   // ⚙️ FUNCIÓN: Preprocesar imagen (CORRECCIÓN A 3D)
-  /// Convierte la imagen a 200x200 en escala de grises y luego a una lista de píxeles normalizados 3D.
   Future<List<List<List<double>>>> _processImage(File imageFile) async {
     final imageBytes = await imageFile.readAsBytes();
     img.Image? originalImage = img.decodeImage(imageBytes);
@@ -164,31 +175,24 @@ class _CamaraScreenState extends State<CamaraScreen> {
       throw Exception("No se pudo decodificar la imagen.");
     }
 
-    // Redimensionar y convertir a escala de grises (200x200x1)
     img.Image resizedImage = img.copyResize(
       originalImage,
-      width: 200,
-      height: 200,
+      width: 270,
+      height: 270,
     );
+
     img.Image grayscaleImage = img.grayscale(resizedImage);
 
-    // Estructurar como tensor 3D: [Height, Width, Channel] -> [200, 200, 1]
     List<List<List<double>>> tensor3D = List.generate(
-      grayscaleImage.height, // 200
-      (y) => List.generate(
-        grayscaleImage.width, // 200
-        (x) {
-          final pixel = grayscaleImage.getPixelSafe(x, y);
-          final grayValue = pixel.r;
-          final normalizedValue = grayValue / 255.0;
-
-          // Retorna una lista con un solo elemento para el canal: [1]
-          return [normalizedValue];
-        },
-      ),
+      grayscaleImage.height,
+      (y) => List.generate(grayscaleImage.width, (x) {
+        final pixel = grayscaleImage.getPixel(x, y);
+        final normalizedValue = pixel.r / 255.0;
+        return [normalizedValue];
+      }),
     );
 
-    return tensor3D; // Retorna la estructura [200, 200, 1]
+    return tensor3D;
   }
 
   // ⚡ FUNCIÓN: Enviar JSON al servidor con carga de index.json real (LÓGICA CORREGIDA)
@@ -210,15 +214,12 @@ class _CamaraScreenState extends State<CamaraScreen> {
         final jsonPrediction = jsonDecode(res.body);
         final pred = jsonPrediction['predictions'][0] as List;
 
-        // 1. Obtener el índice con mayor probabilidad (Lógica robusta)
-        final maxProb = pred.reduce((a, b) => a > b ? a : b);
+        final maxProb = pred.cast<double>().reduce((a, b) => a > b ? a : b);
         final maxIndex = pred.indexOf(maxProb);
 
-        // 2. Cargar el archivo index.json real
         final value = await rootBundle.loadString('assets/json/index.json');
         var datos = json.decode(value) as Map<String, dynamic>;
 
-        // 3. Mapear el índice al nombre de la clase
         var classResultEntry = datos[maxIndex.toString()] as List<dynamic>?;
 
         String classResultPrediction;
@@ -229,8 +230,17 @@ class _CamaraScreenState extends State<CamaraScreen> {
           classResultPrediction = "Clase no encontrada para ID: $maxIndex";
         }
 
-        // 🔥 NUEVO: Si la probabilidad es mayor al 70% -> Navegar a detalles
-        if (maxProb > 0.70 && classResultEntry != null) {
+        if (classResultEntry != null) {
+          final signalId = classResultEntry[0].toString();
+          final signalName = classResultEntry[1].toString();
+
+          await DatabaseService().saveDetection(
+            signResult: signalName,
+            confidence: maxProb,
+            signalId: signalId,
+            iconPath: signalId,
+          );
+
           if (mounted) {
             Navigator.push(
               context,
@@ -238,14 +248,14 @@ class _CamaraScreenState extends State<CamaraScreen> {
                 builder: (context) => SignalDetailScreen(
                   signalId: classResultEntry[0].toString(),
                   signalName: classResultEntry[1].toString(),
-                  imageFile: imageFile, // enviamos la imagen capturada
+                  imageFile: imageFile,
                 ),
               ),
             );
           }
-          // Regresamos un texto corto solo para el debug
-          return "Señal detectada!";
+          return "Señal identificada y detalles cargados.";
         }
+
         return "Predicción Exitosa:\nID del Modelo: $maxIndex\nProbabilidad Máxima: ${maxProb.toStringAsFixed(4)}\nResultado: $classResultPrediction";
       } else {
         return "Error del Servidor: ${res.statusCode}. Cuerpo: ${res.body}";
@@ -255,111 +265,193 @@ class _CamaraScreenState extends State<CamaraScreen> {
     }
   }
 
+  // 🎯 Widget para construir botones de control (Glassmorphism)
+  Widget _buildMinimalControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color iconColor,
+    required Color borderColor,
+    required bool isTopControl,
+  }) {
+    // ⚠️ CORRECCIÓN CLAVE: Aumentar el grosor del borde a 2 o 3. Usamos 2.
+    const double borderWidth = 3.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: isTopControl ? 45 : 55,
+            height: isTopControl ? 45 : 55,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: borderColor.withOpacity(
+                  0.8,
+                ), // Aumentamos la opacidad para que el borde se vea mejor
+                width: borderWidth, // 🚀 AUMENTO DEL GROSOR
+              ),
+            ),
+            child: Icon(icon, color: iconColor, size: isTopControl ? 20 : 28),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    // ⚠️ Colores coherentes con el minimalismo y el color principal
+    const minimalBackgroundColor = Color(0xFFF5F5F5);
+    const primaryAppColor = const Color.fromARGB(170, 255, 112, 2);
+    const floatingControlColor = Colors.white;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
+      backgroundColor: minimalBackgroundColor,
       body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: _image != null
-                  ? Image.file(_image!, fit: BoxFit.cover)
-                  : (_isCameraInitialized
-                        ? CameraPreview(_controller!)
-                        : const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.orange,
-                            ),
-                          )),
-            ),
+        child: Container(
+          color: minimalBackgroundColor,
+          child: Stack(
+            children: [
+              // CÁMARA O IMAGEN DE PREVIEW
+              Positioned.fill(
+                child: _image != null
+                    ? Image.file(_image!, fit: BoxFit.cover)
+                    : (_isCameraInitialized
+                          ? CameraPreview(_controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: primaryAppColor,
+                              ),
+                            )),
+              ),
 
-            // Botón retomar foto
-            if (_image != null)
+              // ❌ 1. BOTÓN DE SALIDA (ESQUINA SUPERIOR IZQUIERDA - Glassmorphism)
               Positioned(
-                top: 20,
-                left: 20,
-                child: FloatingActionButton(
-                  mini: true,
-                  backgroundColor: Colors.black54,
-                  onPressed: () {
-                    setState(() {
-                      _image = null;
-                      _predictionResult = "";
-                    });
-                  },
-                  child: const Icon(Icons.refresh, color: Colors.white),
+                top: 10,
+                left: 10,
+                child: _buildMinimalControlButton(
+                  icon: Icons.close,
+                  onTap: () => Navigator.pop(context),
+                  iconColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  borderColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  isTopControl: true,
                 ),
               ),
 
-            // Controles inferiores
-            Positioned(
-              bottom: 30,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  // Indicador del estado de predicción
-                  if (_isPredicting)
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "Analizando...",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-
-                  const SizedBox(height: 14),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.cameraswitch,
-                          color: Colors.white,
-                        ),
-                        iconSize: 34,
-                        onPressed: _switchCamera,
-                      ),
-
-                      GestureDetector(
-                        onTap: _takePicture,
-                        child: Container(
-                          width: 75,
-                          height: 75,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 35,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(
-                          Icons.photo_library,
-                          color: Colors.white,
-                        ),
-                        iconSize: 34,
-                        onPressed: _pickImage,
-                      ),
-                    ],
+              // 🔄 2. BOTÓN RETOMAR FOTO (ESQUINA SUPERIOR DERECHA - Glassmorphism)
+              if (_image != null)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _buildMinimalControlButton(
+                    icon: Icons.refresh,
+                    onTap: () {
+                      setState(() {
+                        _image = null;
+                        _predictionResult = "";
+                      });
+                    },
+                    iconColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    borderColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    isTopControl: true,
                   ),
-                ],
+                ),
+
+              // Controles inferiores
+              Positioned(
+                bottom: 30,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    // Indicador del estado de predicción (Glassmorphism aplicado)
+                    if (_isPredicting)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primaryAppColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              "Analizando...",
+                              style: TextStyle(
+                                color: floatingControlColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 14),
+
+                    // Fila de controles de cámara
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 🔄 BOTÓN DE CAMBIO DE CÁMARA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.cameraswitch,
+                          onTap: _switchCamera,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+
+                        // 📸 Botón de captura (Círculo Estilo iOS - Glassmorphism)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(75),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(
+                              sigmaX: 8.0,
+                              sigmaY: 8.0,
+                            ),
+                            child: GestureDetector(
+                              onTap: _takePicture,
+                              child: Container(
+                                width: 75,
+                                height: 75,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.15),
+                                  border: Border.all(
+                                    color: primaryAppColor.withOpacity(0.8),
+                                    width:
+                                        7, // Mantenemos 4.0 aquí para que sea el principal
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 🖼️ BOTÓN DE GALERÍA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.photo_library,
+                          onTap: _pickImage,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

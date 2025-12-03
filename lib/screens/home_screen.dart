@@ -3,13 +3,22 @@ import 'custom_bottom_nav.dart';
 import 'package:project_sayit/app_styles.dart';
 import 'package:project_sayit/screens/camara_screen.dart';
 
+// ⚠️ Definiciones de Color para asegurar el estilo de HistoryScreen
+const Color kPrimaryOrange = Color(
+  0xFFF08C69,
+); // Usado en HistoryScreen como primaryColor
+const Color kMinimalBackground = Color(
+  0xFFF5F5F5,
+); // Usado en HistoryScreen como backgroundColor
+
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: kBackground,
+      // 🎯 APLICANDO EL NUEVO FONDO MINIMALISTA
+      backgroundColor: kMinimalBackground,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -20,12 +29,15 @@ class WelcomeScreen extends StatelessWidget {
                 // Título principal
                 Text(
                   '¡Bienvenido a nuestra App!',
-                  style: kTitleStyle,
+                  style: kTitleStyle.copyWith(
+                    color: Colors.black87,
+                  ), // Asegura buena legibilidad en fondo claro
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
 
                 // Subtítulo
+                // Si kTextDark es negro, funcionará bien con el fondo claro.
                 Text(
                   'Empecemos a escanear las señales de tráfico',
                   style: kBodyTextStyle.copyWith(color: kTextDark),
@@ -51,6 +63,7 @@ class WelcomeScreen extends StatelessWidget {
                         height: 120,
                         width: 120,
                         decoration: BoxDecoration(
+                          // Mantenemos el color secundario, asumiendo que kSecondaryYellow se ve bien
                           color: kSecondaryYellow,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
@@ -72,7 +85,7 @@ class WelcomeScreen extends StatelessWidget {
                         'Presiona para escanear e\nidentificar la señal',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: kPrimaryOrange,
+                          color: kPrimaryOrange, // Usando el color principal
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

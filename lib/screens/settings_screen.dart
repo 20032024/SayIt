@@ -186,9 +186,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const AboutUsScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const AboutUsScreen()),
             );
           },
         ),
@@ -253,7 +251,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           });
         },
         activeColor: Colors.white,
-        activeTrackColor: const Color(0xFFF97316),
+        activeTrackColor: const Color.fromARGB(170, 255, 112, 2),
       ),
     );
   }

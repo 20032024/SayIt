@@ -2,57 +2,101 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
 
-  // Método simplificado: SOLO guarda datos de texto
+  // Colección raíz donde se almacenan los usuarios
+  static const String _usersCollection = 'usuarios';
+  // Subcolección donde se almacena el historial de cada usuario
+  static const String _historySubCollection = 'history';
+
+  // ----------------------------------------------------
+  //                 OPERACIONES DE ESCRITURA (CREATE/DELETE)
+  // ----------------------------------------------------
+
+  // 💾 Guarda un nuevo registro de detección en la subcolección de historial del usuario.
   Future<void> saveDetection({
-    required String signResult, // El nombre del insecto
-    required double confidence, // Probabilidad
+    required String signResult,
+    required double confidence,
+    required String signalId,
+    required String iconPath,
   }) async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null)
-        return; // Si no hay usuario, no guardamos nada (o lanzamos error)
+    final user = _auth.currentUser;
 
-      // Guardamos solo el registro en Firestore
-      await _db.collection('history').add({
-        'userId': user.uid,
-        'userEmail': user.email,
-        'signtName': signResult,
+    if (user == null) {
+      throw Exception("Usuario no autenticado para guardar historial.");
+    }
+
+    try {
+      // RUTA DE ESCRITURA SEGURA: /usuarios/{UID}/history/{documentId}
+      final historyCollectionRef = _firestore
+          .collection(_usersCollection)
+          .doc(user.uid)
+          .collection(_historySubCollection);
+
+      await historyCollectionRef.add({
+        'signName': signResult,
         'confidence': confidence,
-        'timestamp':
-            FieldValue.serverTimestamp(), // La fecha y hora exactas del servidor
-        'type': 'text_log_only', // (Opcional) Para saber que no hay foto
+        'signalId': signalId,
+        'iconPath': iconPath,
+        'timestamp': FieldValue.serverTimestamp(),
       });
 
-      print("✅ Registro guardado en historial (Sin imagen)");
+      print(
+        '✅ Historial guardado en: $_usersCollection/${user.uid}/$_historySubCollection',
+      );
     } catch (e) {
-      print("❌ Error al guardar registro: $e");
+      print('❌ Error al guardar historial en Firestore: $e');
       rethrow;
     }
   }
 
-  // Obtener historial (Sin cambios, solo traerá datos de texto)
+  // 🗑️ Elimina un registro de historial específico por su ID de documento.
+  Future<void> deleteDetection(String docId) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      throw Exception("Usuario no autenticado para eliminar historial.");
+    }
+
+    try {
+      // RUTA DE ELIMINACIÓN SEGURA: /usuarios/{UID}/history/{docId}
+      final docRef = _firestore
+          .collection(_usersCollection)
+          .doc(user.uid)
+          .collection(_historySubCollection)
+          .doc(docId);
+
+      await docRef.delete();
+      print(
+        '🗑️ Registro eliminado: $_usersCollection/${user.uid}/$_historySubCollection/$docId',
+      );
+    } catch (e) {
+      print('❌ Error al eliminar registro ($docId): $e');
+      rethrow;
+    }
+  }
+
+  // ----------------------------------------------------
+  //                 OPERACIÓN DE LECTURA (READ)
+  // ----------------------------------------------------
+
+  // 📖 Obtiene el stream del historial del usuario actual (para StreamBuilder).
   Stream<QuerySnapshot> getUserHistory() {
     final user = _auth.currentUser;
-    if (user != null) {
-      return _db
-          .collection('history')
-          .where('userId', isEqualTo: user.uid)
-          .orderBy('timestamp', descending: true)
-          .snapshots();
-    } else {
-      return const Stream.empty();
+    if (user == null) {
+      // ⚠️ CORRECCIÓN CLAVE: Devolver un stream que inmediatamente emite un QuerySnapshot vacío
+      // y que no lanza errores de construcción interna.
+      return const Stream.empty(); // Devuelve un stream vacío que cumple con el tipo.
     }
-  }
 
-  Future<void> deleteDetection(String docId) async {
-    try {
-      await _db.collection('history').doc(docId).delete();
-    } catch (e) {
-      print("Error al eliminar: $e");
-      rethrow;
-    }
+    // RUTA DE LECTURA SEGURA: /usuarios/{UID}/history
+    return _firestore
+        .collection(_usersCollection)
+        .doc(user.uid)
+        .collection(_historySubCollection)
+        // Opcional: Ordenar por fecha de forma descendente (más reciente primero)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
   }
 }
