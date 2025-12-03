@@ -1,0 +1,26 @@
+{
+    "0": [
+        "11",
+        "Right-of-way at intersection/Derecho de paso en la intersección"
+    ],
+    "1": [
+        "12",
+        "Priority road/Carretera prioritaria"
+    ],
+    "2": [
+        "14",
+        "Stop/Alto"
+    ],
+    "3": [
+        "17",
+        "No entry/No pasar"
+    ],
+    "4": [
+        "40",
+        "Mandatory roundabout/Rotonda obligatoria"
+    ],
+    "5": [
+        "8",
+        "Speed limit (120km/h)"
+    ]
+}

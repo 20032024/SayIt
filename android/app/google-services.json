@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "869244748210",
+    "firebase_url": "https://snap-sign-1736a-default-rtdb.firebaseio.com",
+    "project_id": "snap-sign-1736a",
+    "storage_bucket": "snap-sign-1736a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869244748210:android:c530afc4f375af0d1f64ab",
+        "android_client_info": {
+          "package_name": "com.ander.snapsign"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "869244748210-9sf2035m1vavaa2d2ec1g7v3ff9ices3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ander.snapsign",
+            "certificate_hash": "5e237c19428186e4eadb80971666109c009ea2dc"
+          }
+        },
+        {
+          "client_id": "869244748210-bcob75td5ueaspdpuj2epv9ecoo7o5hi.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ander.snapsign",
+            "certificate_hash": "fee6363fe0e640c5885500c1249895baac09ca2c"
+          }
+        },
+        {
+          "client_id": "869244748210-ik2i4lkigcm0jq8p0v58g8r844euk7n8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDxhT6Tm4PxxspdGujtwGn1iGLbfUoOQ6U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "869244748210-ik2i4lkigcm0jq8p0v58g8r844euk7n8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

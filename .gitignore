@@ -4,3 +4,6 @@
 .packages
 .dart_tool/
 build/
+.flutter-plugins
+.flutter-plugins-dependencies
+key.properties
