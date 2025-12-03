@@ -1,118 +1,146 @@
 import 'package:flutter/material.dart';
-// Asumo que esta es la ruta a tu componente de navegación inferior
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // No se usa directamente aquí, pero útil.
+import 'package:intl/intl.dart';
+// Asegúrate de que estas importaciones son correctas
 import 'custom_bottom_nav.dart';
+import 'package:project_sayit/models/icon_mapper_model.dart';
+import 'package:project_sayit/auth/database_service.dart';
 
-// Definición de colores
-const Color primaryColor = Color(0xFFF08C69); // Tono naranja/salmón
-const Color backgroundColor = Color(0xFFF5F5F5); // Fondo gris muy claro
+// Colores
+const Color primaryColor = Color(0xFFF08C69);
+const Color backgroundColor = Color(0xFFF5F5F5);
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
-  // Lista de datos simulados para el mockup
-  final List<Map<String, String>> historyItems = const [
-    {
-      'title': 'Stop',
-      'date': '29/10/2025',
-      'time': '20:00 p.m.',
-      'iconPath': 'stop', // Placeholder para el ícono de stop
-    },
-    {
-      'title': 'Right of way at intersection',
-      'date': '29/10/2025',
-      'time': '20:00 p.m.',
-      'iconPath': 'intersection', // Placeholder
-    },
-    {
-      'title': 'Right of way at intersection',
-      'date': '29/10/2025',
-      'time': '20:00 p.m.',
-      'iconPath': 'intersection', // Placeholder
-    },
-    // Añadir más elementos para que la lista sea desplazable
-    {
-      'title': 'Speed limit exceeded',
-      'date': '30/10/2025',
-      'time': '10:30 a.m.',
-      'iconPath': 'speed',
-    },
-    {
-      'title': 'No U-Turn zone',
-      'date': '01/11/2025',
-      'time': '15:45 p.m.',
-      'iconPath': 'uturn',
-    },
-    {
-      'title': 'Parking violation',
-      'date': '02/11/2025',
-      'time': '09:00 a.m.',
-      'iconPath': 'parking',
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: backgroundColor, // Aplicar color de fondo
-      appBar: _buildCustomAppBar(context),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 10.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Título y Subtítulo
-              const Text(
-                'Historial',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 5),
-              const Text(
-                'Aquí encontrarás una lista de las consultas realizadas.',
-                style: TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 20),
+    // ⚠️ Importante: El StreamBuilder necesita que el usuario esté autenticado.
+    final currentUser = FirebaseAuth.instance.currentUser;
 
-              // Lista de Elementos del Historial
-              ...historyItems.map((item) {
-                // Usamos un Dismissible para el efecto de deslizar para eliminar
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 15.0),
-                  child: _HistoryCard(
-                    title: item['title']!,
-                    date: item['date']!,
-                    time: item['time']!,
-                    iconName: item['iconPath']!,
+    return Scaffold(
+      backgroundColor: backgroundColor,
+      appBar: _buildCustomAppBar(context),
+
+      body: currentUser == null
+          ? const Center(
+              child: Text(
+                "Inicia sesión para ver tu historial.",
+                style: TextStyle(fontSize: 16, color: Colors.black54),
+              ),
+            )
+          // 🔥 StreamBuilder para leer historial REAL desde Firebase
+          : StreamBuilder<QuerySnapshot>(
+              stream: DatabaseService().getUserHistory(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // Manejo de errores de Firestore (ej. si la autenticación falló)
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error al cargar datos: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "No hay historial todavía",
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                  );
+                }
+
+                final historyDocs = snapshot.data!.docs;
+
+                return SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 10,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Historial',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        const Text(
+                          'Aquí encontrarás una lista de las consultas realizadas.',
+                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // 🔥 Mapeamos los registros REALES
+                        ...historyDocs.map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+
+                          final timestamp = data['timestamp'] as Timestamp?;
+                          final dateTime =
+                              timestamp?.toDate() ?? DateTime.now();
+
+                          final dateFormatted = DateFormat(
+                            'dd/MM/yyyy',
+                          ).format(dateTime);
+
+                          final timeFormatted = DateFormat(
+                            'hh:mm a',
+                          ).format(dateTime);
+
+                          // ⚠️ Obtener el identificador del icono
+                          final iconId = data['iconPath'] ?? 'default';
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 15),
+                            child: _HistoryCard(
+                              docId: doc.id,
+                              title: data['signName'] ?? 'Sin nombre',
+                              date: dateFormatted,
+                              time: timeFormatted,
+                              iconId: iconId, // Pasamos el ID del icono
+                            ),
+                          );
+                        }).toList(),
+
+                        const SizedBox(height: 80),
+                      ],
+                    ),
                   ),
                 );
-              }).toList(),
+              },
+            ),
 
-              // Espacio extra al final para el BottomNav
-              const SizedBox(height: 80),
-            ],
-          ),
-        ),
-      ),
-      // Integración de la navegación inferior personalizada
       bottomNavigationBar: const CustomBottomNav(currentIndex: 1),
     );
   }
 
-  // Widget para el AppBar personalizado
+  // AppBar personalizado
   PreferredSizeWidget _buildCustomAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: backgroundColor, // Mismo color que el fondo
-      elevation: 0, // Sin sombra
-      automaticallyImplyLeading: false, // Ocultar el botón 'back' por defecto
+      backgroundColor: backgroundColor,
+      elevation: 0,
+      automaticallyImplyLeading: false,
       leading: IconButton(
         icon: const Icon(
           Icons.arrow_back_ios_new,
-          color: Colors.black, // Ícono negro como en el mockup
+          color: Colors.black,
           size: 20,
         ),
         onPressed: () {
-          // Lógica de navegación hacia atrás (solo maquetado)
-          // Navigator.pop(context);
+          // Navegar a la pantalla anterior o al Home
+          Navigator.pop(context);
         },
       ),
       title: const Text(
@@ -124,56 +152,65 @@ class HistoryScreen extends StatelessWidget {
         ),
       ),
       centerTitle: true,
-      // Icono de batería y señal simulados (solo en el mockup, no necesario en Dart)
-      actions: const [
-        // Podrías poner algún icono o espacio si fuera necesario
-      ],
     );
   }
 }
 
-// Widget de Tarjeta de Historial con Deslizamiento para Eliminar
+// --------------------------------------------------
+//     TU TARJETA (_HistoryCard) + Firestore Delete
+// --------------------------------------------------
 class _HistoryCard extends StatelessWidget {
+  final String docId;
   final String title;
   final String date;
   final String time;
-  final String iconName;
+  final String iconId; // ⚠️ Nuevo: ID para mapear el icono
 
   const _HistoryCard({
+    required this.docId,
     required this.title,
     required this.date,
     required this.time,
-    required this.iconName,
+    required this.iconId, // ⚠️ Nuevo: Requerido
   });
 
   @override
   Widget build(BuildContext context) {
-    // Usamos Dismissible para manejar la acción de deslizar
     return Dismissible(
-      key: Key(title + date + time), // Clave única para el elemento
-      direction:
-          DismissDirection.endToStart, // Deslizar solo de derecha a izquierda
-      // Fondo cuando se desliza
+      key: Key(docId),
+      direction: DismissDirection.endToStart,
+
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.red, // Color rojo para eliminar
+          color: Colors.red,
           borderRadius: BorderRadius.circular(15),
         ),
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 30),
       ),
-      onDismissed: (direction) {
-        // Aquí iría la lógica de eliminación. Por ahora solo es maquetado.
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Elemento "$title" eliminado (Mock)')),
-        );
+
+      // 🔥 Ahora sí elimina de Firestore
+      onDismissed: (direction) async {
+        try {
+          // Llama a la función de eliminación segura
+          await DatabaseService().deleteDetection(docId);
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Registro eliminado')));
+        } catch (e) {
+          // Mostrar un error si la eliminación falla (ej. si el usuario se desconectó)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error al eliminar: $e')));
+        }
       },
-      // Contenido de la tarjeta
+
       child: Container(
-        padding: const EdgeInsets.all(15.0),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: Colors.white, // Fondo blanco para la tarjeta
+          color: Colors.white,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
@@ -186,23 +223,25 @@ class _HistoryCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Ícono lateral (simulación del diseño)
             Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                // Simulación del borde hexagonal/rombo del ícono
                 border: Border.all(color: primaryColor, width: 2),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Center(
-                // Usamos un ícono simple como placeholder para el SVG complejo del mockup
-                child: Icon(_getIcon(iconName), color: primaryColor, size: 28),
+                // 🔥 Usamos el ID para obtener el icono
+                child: Icon(
+                  getIconForSign(iconId), // Usa iconId en lugar de title
+                  color: primaryColor,
+                  size: 28,
+                ),
               ),
             ),
+
             const SizedBox(width: 15),
 
-            // Texto principal
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,6 +255,7 @@ class _HistoryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
+
                   Row(
                     children: [
                       Text(
@@ -242,23 +282,5 @@ class _HistoryCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // Función helper para obtener un ícono basado en el nombre (solo para mockup)
-  IconData _getIcon(String name) {
-    switch (name) {
-      case 'stop':
-        return Icons.do_not_disturb_alt;
-      case 'intersection':
-        return Icons.turn_right;
-      case 'speed':
-        return Icons.speed;
-      case 'uturn':
-        return Icons.u_turn_left;
-      case 'parking':
-        return Icons.local_parking;
-      default:
-        return Icons.info_outline;
-    }
   }
 }
