@@ -8,7 +8,7 @@ import 'package:project_sayit/models/icon_mapper_model.dart';
 import 'package:project_sayit/auth/database_service.dart';
 
 // Colores
-const Color primaryColor = Color(0xFFF08C69);
+const Color primaryColor = Color.fromARGB(170, 255, 112, 2);
 const Color backgroundColor = Color(0xFFF5F5F5);
 
 class HistoryScreen extends StatelessWidget {
@@ -27,7 +27,11 @@ class HistoryScreen extends StatelessWidget {
           ? const Center(
               child: Text(
                 "Inicia sesión para ver tu historial.",
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                  fontWeight: FontWeight.w600, // Coherencia con Details
+                ),
               ),
             )
           // 🔥 StreamBuilder para leer historial REAL desde Firebase
@@ -52,7 +56,11 @@ class HistoryScreen extends StatelessWidget {
                   return const Center(
                     child: Text(
                       "No hay historial todavía",
-                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600, // Coherencia con Details
+                      ),
                     ),
                   );
                 }
@@ -73,13 +81,19 @@ class HistoryScreen extends StatelessWidget {
                           'Historial',
                           style: TextStyle(
                             fontSize: 26,
-                            fontWeight: FontWeight.bold,
+                            fontWeight:
+                                FontWeight.w800, // Usamos w800 como en Details
                           ),
                         ),
                         const SizedBox(height: 5),
                         const Text(
                           'Aquí encontrarás una lista de las consultas realizadas.',
-                          style: TextStyle(fontSize: 14, color: Colors.black54),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                            fontWeight:
+                                FontWeight.w500, // Ligeramente más grueso
+                          ),
                         ),
                         const SizedBox(height: 20),
 
@@ -131,24 +145,26 @@ class HistoryScreen extends StatelessWidget {
     return AppBar(
       backgroundColor: backgroundColor,
       elevation: 0,
-      automaticallyImplyLeading: false,
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Colors.black,
-          size: 20,
-        ),
-        onPressed: () {
-          // Navegar a la pantalla anterior o al Home
-          Navigator.pop(context);
-        },
-      ),
+      automaticallyImplyLeading:
+          false, // 🔥 Mantenemos en false para quitar el botón nativo
+      // ⚠️ ELIMINAMOS el botón leading (flecha)
+      // leading: IconButton(
+      //   icon: const Icon(
+      //     Icons.arrow_back_ios_new,
+      //     color: Colors.black,
+      //     size: 20,
+      //   ),
+      //   onPressed: () {
+      //     // Navegar a la pantalla anterior o al Home
+      //     Navigator.pop(context);
+      //   },
+      // ),
       title: const Text(
         'Finished',
         style: TextStyle(
           color: Colors.black,
           fontSize: 18,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w800, // Usamos w800 para el título del AppBar
         ),
       ),
       centerTitle: true,
@@ -184,7 +200,7 @@ class _HistoryCard extends StatelessWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: Colors.red,
+          color: const Color.fromARGB(170, 255, 112, 2),
           borderRadius: BorderRadius.circular(15),
         ),
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 30),
@@ -249,7 +265,7 @@ class _HistoryCard extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w600, // Coherencia con Details
                       fontSize: 16,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -263,6 +279,7 @@ class _HistoryCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 13,
+                          fontWeight: FontWeight.w500, // Ligeramente más grueso
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -271,6 +288,7 @@ class _HistoryCard extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 13,
+                          fontWeight: FontWeight.w500, // Ligeramente más grueso
                         ),
                       ),
                     ],

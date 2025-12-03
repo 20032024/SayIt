@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img; // Paquete de preprocesamiento
 import 'package:project_sayit/app_styles.dart';
 import 'package:project_sayit/auth/database_service.dart';
-import 'dart:ui' as ui;
+import 'dart:ui' as ui; // Importación necesaria para ImageFilter
 import 'package:project_sayit/models/signal_description.dart';
 import 'package:project_sayit/screens/detail_screen.dart';
 
@@ -265,128 +265,193 @@ class _CamaraScreenState extends State<CamaraScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            // CÁMARA O IMAGEN DE PREVIEW
-            Positioned.fill(
-              child: _image != null
-                  ? Image.file(_image!, fit: BoxFit.cover)
-                  : (_isCameraInitialized
-                        ? CameraPreview(_controller!)
-                        : const Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.orange,
-                            ),
-                          )),
-            ),
+  // 🎯 Widget para construir botones de control (Glassmorphism)
+  Widget _buildMinimalControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color iconColor,
+    required Color borderColor,
+    required bool isTopControl,
+  }) {
+    // ⚠️ CORRECCIÓN CLAVE: Aumentar el grosor del borde a 2 o 3. Usamos 2.
+    const double borderWidth = 3.0;
 
-            // ❌ 1. BOTÓN DE SALIDA (ESQUINA SUPERIOR IZQUIERDA)
-            Positioned(
-              top: 10,
-              left: 10,
-              child: FloatingActionButton(
-                mini: true,
-                backgroundColor: Colors.black54,
-                heroTag:
-                    'exitButton', // Añadido para evitar errores si hay muchos FABs
-                onPressed: () {
-                  // Vuelve a la pantalla anterior (menú principal)
-                  Navigator.pop(context);
-                },
-                child: const Icon(Icons.close, color: Colors.white),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: isTopControl ? 45 : 55,
+            height: isTopControl ? 45 : 55,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: borderColor.withOpacity(
+                  0.8,
+                ), // Aumentamos la opacidad para que el borde se vea mejor
+                width: borderWidth, // 🚀 AUMENTO DEL GROSOR
               ),
             ),
+            child: Icon(icon, color: iconColor, size: isTopControl ? 20 : 28),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // 🔄 2. BOTÓN RETOMAR FOTO (ESQUINA SUPERIOR DERECHA)
-            if (_image != null)
+  @override
+  Widget build(BuildContext context) {
+    // ⚠️ Colores coherentes con el minimalismo y el color principal
+    const minimalBackgroundColor = Color(0xFFF5F5F5);
+    const primaryAppColor = const Color.fromARGB(170, 255, 112, 2);
+    const floatingControlColor = Colors.white;
+
+    return Scaffold(
+      backgroundColor: minimalBackgroundColor,
+      body: SafeArea(
+        child: Container(
+          color: minimalBackgroundColor,
+          child: Stack(
+            children: [
+              // CÁMARA O IMAGEN DE PREVIEW
+              Positioned.fill(
+                child: _image != null
+                    ? Image.file(_image!, fit: BoxFit.cover)
+                    : (_isCameraInitialized
+                          ? CameraPreview(_controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: primaryAppColor,
+                              ),
+                            )),
+              ),
+
+              // ❌ 1. BOTÓN DE SALIDA (ESQUINA SUPERIOR IZQUIERDA - Glassmorphism)
               Positioned(
                 top: 10,
-                right: 10,
-                child: FloatingActionButton(
-                  mini: true,
-                  backgroundColor: Colors.black54,
-                  heroTag: 'refreshButton', // Añadido para evitar errores
-                  onPressed: () {
-                    setState(() {
-                      _image = null;
-                      _predictionResult = "";
-                    });
-                  },
-                  child: const Icon(Icons.refresh, color: Colors.white),
+                left: 10,
+                child: _buildMinimalControlButton(
+                  icon: Icons.close,
+                  onTap: () => Navigator.pop(context),
+                  iconColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  borderColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  isTopControl: true,
                 ),
               ),
 
-            // Controles inferiores
-            Positioned(
-              bottom: 30,
-              left: 0,
-              right: 0,
-              child: Column(
-                children: [
-                  // Indicador del estado de predicción
-                  if (_isPredicting)
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.orange,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "Analizando...",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-
-                  const SizedBox(height: 14),
-
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.cameraswitch,
-                          color: Colors.white,
-                        ),
-                        iconSize: 34,
-                        onPressed: _switchCamera,
-                      ),
-
-                      GestureDetector(
-                        onTap: _takePicture,
-                        child: Container(
-                          width: 75,
-                          height: 75,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 35,
-                            color: Colors.black,
-                          ),
-                        ),
-                      ),
-
-                      IconButton(
-                        icon: const Icon(
-                          Icons.photo_library,
-                          color: Colors.white,
-                        ),
-                        iconSize: 34,
-                        onPressed: _pickImage,
-                      ),
-                    ],
+              // 🔄 2. BOTÓN RETOMAR FOTO (ESQUINA SUPERIOR DERECHA - Glassmorphism)
+              if (_image != null)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _buildMinimalControlButton(
+                    icon: Icons.refresh,
+                    onTap: () {
+                      setState(() {
+                        _image = null;
+                        _predictionResult = "";
+                      });
+                    },
+                    iconColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    borderColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    isTopControl: true,
                   ),
-                ],
+                ),
+
+              // Controles inferiores
+              Positioned(
+                bottom: 30,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    // Indicador del estado de predicción (Glassmorphism aplicado)
+                    if (_isPredicting)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primaryAppColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              "Analizando...",
+                              style: TextStyle(
+                                color: floatingControlColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    const SizedBox(height: 14),
+
+                    // Fila de controles de cámara
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 🔄 BOTÓN DE CAMBIO DE CÁMARA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.cameraswitch,
+                          onTap: _switchCamera,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+
+                        // 📸 Botón de captura (Círculo Estilo iOS - Glassmorphism)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(75),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(
+                              sigmaX: 8.0,
+                              sigmaY: 8.0,
+                            ),
+                            child: GestureDetector(
+                              onTap: _takePicture,
+                              child: Container(
+                                width: 75,
+                                height: 75,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.15),
+                                  border: Border.all(
+                                    color: primaryAppColor.withOpacity(0.8),
+                                    width:
+                                        7, // Mantenemos 4.0 aquí para que sea el principal
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 🖼️ BOTÓN DE GALERÍA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.photo_library,
+                          onTap: _pickImage,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
