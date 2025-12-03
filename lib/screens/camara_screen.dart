@@ -8,10 +8,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img; // Paquete de preprocesamiento
-import 'package:project_sayit/app_styles.dart'; // <--- ESTA LÍNEA
-import 'dart:ui' as ui;
-// Constante de estilo simple (reemplaza con tu archivo app_styles.dart si lo tienes)
-//const TextStyle kBodyTextStyle = TextStyle(fontSize: 16); 
+import 'package:project_sayit/app_styles.dart';
+import 'package:project_sayit/auth/database_service.dart';
+import 'dart:ui' as ui; // Importación necesaria para ImageFilter
+import 'package:project_sayit/models/signal_description.dart';
+import 'package:project_sayit/screens/detail_screen.dart';
 
 class CamaraScreen extends StatefulWidget {
   const CamaraScreen({super.key});
@@ -26,15 +27,13 @@ class _CamaraScreenState extends State<CamaraScreen> {
   bool _isCameraInitialized = false;
   File? _image;
   String _predictionResult = 'Esperando imagen...';
+  bool _isPredicting = false; // nos ayuda para mejor manejo la carga/predicción
 
   // 1. Datos de la API para el endpoint de predicción
   final url = Uri.parse(
-    "https://tensorflow-signs-model-latest.onrender.com/v1/models/signs-model:predict",
+    "https://tensorflow-serving-snapsign-1-0.onrender.com/v1/models/snapsign_model:predict",
   );
   final headers = {"Content-Type": "application/json;charset=UTF-8"};
-
-  // La variable de simulación (_simulatedIndexJson) ha sido eliminada.
-  // Ahora cargaremos el index.json real en la función de envío.
 
   @override
   void initState() {
@@ -50,14 +49,14 @@ class _CamaraScreenState extends State<CamaraScreen> {
         setState(() => _predictionResult = 'No se encontraron cámaras.');
         return;
       }
-      
+
       // Asume la cámara trasera, o la primera si no se especifica.
       _controller = CameraController(
-        _cameras![0], 
+        _cameras![0],
         ResolutionPreset.medium,
         enableAudio: false,
       );
-      
+
       await _controller?.initialize();
       if (!mounted) return;
 
@@ -71,34 +70,80 @@ class _CamaraScreenState extends State<CamaraScreen> {
 
   // 📸 Lógica para tomar foto
   Future<void> _takePicture() async {
-    if (!_isCameraInitialized || _controller == null || _controller!.value.isTakingPicture) {
+    // 1. Validaciones iniciales MÁS FUERTES
+    if (!_isCameraInitialized || _controller == null || _isPredicting) {
+      return;
+    }
+
+    // ⚠️ NUEVO: Asegurarse de que la cámara no está ocupada tomando una foto.
+    if (_controller!.value.isTakingPicture) {
+      setState(() {
+        _predictionResult = 'La cámara está ocupada, espere un momento.';
+      });
+      return;
+    }
+
+    // ⚠️ VERIFICACIÓN CRÍTICA: Vista previa activa.
+    if (!_controller!.value.isInitialized) {
+      setState(() {
+        _predictionResult = 'La cámara no está lista. Intente de nuevo.';
+      });
       return;
     }
 
     try {
+      // 3. Iniciar estado de carga y mensaje ANTES de tomar la foto
+      setState(() {
+        _isPredicting = true;
+        _predictionResult = 'Enviando imagen para predicción...';
+      });
+
+      // 4. Tomar la foto (el await es CRÍTICO aquí)
       final XFile file = await _controller!.takePicture();
       final tempImage = File(file.path);
 
-      setState(() {
-        _image = tempImage;
-      });
+      // 5. Actualizar la imagen y procesar
+      if (mounted) {
+        setState(() {
+          _image = tempImage;
+        });
+      }
 
-      // Llamar a la función de envío al servidor
-      _predictionResult = 'Enviando imagen para predicción...';
+      // 6. Llamar a la función de envío al servidor
       final result = await _enviarImagenAlServidorJson(tempImage);
-      setState(() {
-        _predictionResult = result;
-      });
-      
+
+      // 7. Finalizar carga y mostrar resultado
+      if (mounted) {
+        setState(() {
+          _predictionResult = result;
+          _isPredicting = false;
+        });
+      }
+    } on CameraException catch (e) {
+      // Capturamos específicamente el error de la cámara
+      print('CameraException: ${e.code}');
+      if (mounted) {
+        setState(() {
+          _isPredicting = false;
+          _predictionResult = 'Error de Cámara al tomar la foto: ${e.code}';
+        });
+      }
     } catch (e) {
-      setState(() {
-        _predictionResult = 'Error al tomar la foto: $e';
-      });
+      // Capturamos cualquier otro error
+      print('Error desconocido en _takePicture: $e');
+      if (mounted) {
+        setState(() {
+          _isPredicting = false;
+          _predictionResult = 'Error desconocido: $e';
+        });
+      }
     }
   }
 
   // 🖼️ Lógica para seleccionar de galería
   Future<void> _pickImage() async {
+    if (_isPredicting) return;
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
@@ -107,19 +152,21 @@ class _CamaraScreenState extends State<CamaraScreen> {
 
       setState(() {
         _image = tempImage;
+        _isPredicting = true;
+        _predictionResult = 'Enviando imagen para predicción...';
       });
-      
+
       // Llamar a la función de envío al servidor
-      _predictionResult = 'Enviando imagen para predicción...';
       final result = await _enviarImagenAlServidorJson(tempImage);
+
       setState(() {
         _predictionResult = result;
+        _isPredicting = false;
       });
     }
   }
 
-// ⚙️ FUNCIÓN: Preprocesar imagen (CORRECCIÓN A 3D)
-  /// Convierte la imagen a 300x300 en escala de grises y luego a una lista de píxeles normalizados 3D.
+  // ⚙️ FUNCIÓN: Preprocesar imagen (CORRECCIÓN A 3D)
   Future<List<List<List<double>>>> _processImage(File imageFile) async {
     final imageBytes = await imageFile.readAsBytes();
     img.Image? originalImage = img.decodeImage(imageBytes);
@@ -128,46 +175,28 @@ class _CamaraScreenState extends State<CamaraScreen> {
       throw Exception("No se pudo decodificar la imagen.");
     }
 
-    // Redimensionar y convertir a escala de grises (300x300x1)
     img.Image resizedImage = img.copyResize(
       originalImage,
-      width: 300,
-      height: 300,
+      width: 270,
+      height: 270,
     );
+
     img.Image grayscaleImage = img.grayscale(resizedImage);
 
-    // Estructurar como tensor 3D: [Height, Width, Channel] -> [300, 300, 1]
     List<List<List<double>>> tensor3D = List.generate(
-      grayscaleImage.height, // 300
-      (y) => List.generate(
-        grayscaleImage.width, // 300
-        (x) {
-          final pixel = grayscaleImage.getPixelSafe(x, y);
-          final grayValue = pixel.r;
-          final normalizedValue = grayValue / 255.0;
-
-          // Retorna una lista con un solo elemento para el canal: [1]
-          return [normalizedValue];
-        },
-      ),
+      grayscaleImage.height,
+      (y) => List.generate(grayscaleImage.width, (x) {
+        final pixel = grayscaleImage.getPixel(x, y);
+        final normalizedValue = pixel.r / 255.0;
+        return [normalizedValue];
+      }),
     );
 
-    return tensor3D; // Retorna la estructura [300, 300, 1]
+    return tensor3D;
   }
 
-  // ⚡ FUNCIÓN: Enviar JSON al servidor con carga de index.json real
+  // ⚡ FUNCIÓN: Enviar JSON al servidor con carga de index.json real (LÓGICA CORREGIDA)
   Future<String> _enviarImagenAlServidorJson(File imageFile) async {
-    // Mostrar indicador de carga
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-    } else {
-      return "Error de contexto.";
-    }
-
     try {
       final processedImage = await _processImage(imageFile);
 
@@ -181,27 +210,18 @@ class _CamaraScreenState extends State<CamaraScreen> {
         body: jsonEncode(predictionInstance),
       );
 
-      // Ocultar indicador de carga
-      if (context.mounted) Navigator.pop(context);
-
       if (res.statusCode == 200) {
         final jsonPrediction = jsonDecode(res.body);
         final pred = jsonPrediction['predictions'][0] as List;
 
-        // 1. Obtener el índice con mayor probabilidad
-        // Esto asume que el índice de la mayor probabilidad es el índice de la clase
-        double maxProb = pred.reduce((a, b) => (a as double) > (b as double) ? a : b);
+        final maxProb = pred.cast<double>().reduce((a, b) => a > b ? a : b);
         final maxIndex = pred.indexOf(maxProb);
-        
-        // 2. Cargar el archivo index.json real (TU INDEX.JSON)
+
         final value = await rootBundle.loadString('assets/json/index.json');
         var datos = json.decode(value) as Map<String, dynamic>;
 
-        // 3. Mapear el índice al nombre de la clase
-        // Tu JSON: { "0": ["20", "Dangerous curve right"], "1": ["21", "Double curve"] }
-        // La decodificación usa maxIndex.toString() para la clave y el índice 1 para el nombre de la señal.
         var classResultEntry = datos[maxIndex.toString()] as List<dynamic>?;
-        
+
         String classResultPrediction;
 
         if (classResultEntry != null && classResultEntry.length > 1) {
@@ -210,128 +230,228 @@ class _CamaraScreenState extends State<CamaraScreen> {
           classResultPrediction = "Clase no encontrada para ID: $maxIndex";
         }
 
+        if (classResultEntry != null) {
+          final signalId = classResultEntry[0].toString();
+          final signalName = classResultEntry[1].toString();
+
+          await DatabaseService().saveDetection(
+            signResult: signalName,
+            confidence: maxProb,
+            signalId: signalId,
+            iconPath: signalId,
+          );
+
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SignalDetailScreen(
+                  signalId: classResultEntry[0].toString(),
+                  signalName: classResultEntry[1].toString(),
+                  imageFile: imageFile,
+                ),
+              ),
+            );
+          }
+          return "Señal identificada y detalles cargados.";
+        }
+
         return "Predicción Exitosa:\nID del Modelo: $maxIndex\nProbabilidad Máxima: ${maxProb.toStringAsFixed(4)}\nResultado: $classResultPrediction";
-        
       } else {
         return "Error del Servidor: ${res.statusCode}. Cuerpo: ${res.body}";
       }
     } catch (e) {
-      // Ocultar indicador de carga si hay un error
-      if (context.mounted) Navigator.pop(context);
       return "Error al conectar o procesar la API: $e";
     }
   }
 
+  // 🎯 Widget para construir botones de control (Glassmorphism)
+  Widget _buildMinimalControlButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color iconColor,
+    required Color borderColor,
+    required bool isTopControl,
+  }) {
+    // ⚠️ CORRECCIÓN CLAVE: Aumentar el grosor del borde a 2 o 3. Usamos 2.
+    const double borderWidth = 3.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: isTopControl ? 45 : 55,
+            height: isTopControl ? 45 : 55,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: borderColor.withOpacity(
+                  0.8,
+                ), // Aumentamos la opacidad para que el borde se vea mejor
+                width: borderWidth, // 🚀 AUMENTO DEL GROSOR
+              ),
+            ),
+            child: Icon(icon, color: iconColor, size: isTopControl ? 20 : 28),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // ⚠️ Colores coherentes con el minimalismo y el color principal
+    const minimalBackgroundColor = Color(0xFFF5F5F5);
+    const primaryAppColor = const Color.fromARGB(170, 255, 112, 2);
+    const floatingControlColor = Colors.white;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Detector de Señales'),
-        backgroundColor: Colors.orange,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            // 📸 Vista de la Cámara o Imagen Seleccionada
-            Container(
-              height: 350,
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                border: Border.all(color: Colors.blueGrey),
-                borderRadius: BorderRadius.circular(8.0),
+      backgroundColor: minimalBackgroundColor,
+      body: SafeArea(
+        child: Container(
+          color: minimalBackgroundColor,
+          child: Stack(
+            children: [
+              // CÁMARA O IMAGEN DE PREVIEW
+              Positioned.fill(
+                child: _image != null
+                    ? Image.file(_image!, fit: BoxFit.cover)
+                    : (_isCameraInitialized
+                          ? CameraPreview(_controller!)
+                          : const Center(
+                              child: CircularProgressIndicator(
+                                color: primaryAppColor,
+                              ),
+                            )),
               ),
-              child: _image != null
-                  ? Image.file(_image!, fit: BoxFit.cover)
-                  : _isCameraInitialized && _controller != null
-                      ? AspectRatio(
-                          aspectRatio: _controller!.value.aspectRatio,
-                          child: CameraPreview(_controller!),
-                        )
-                      : const Center(child: Text('Cargando cámara...')),
-            ),
-            const SizedBox(height: 20),
-            
-            // 🔘 Botones de Acción
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: <Widget>[
-                ElevatedButton.icon(
-                  onPressed: _takePicture,
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Tomar Foto'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+
+              // ❌ 1. BOTÓN DE SALIDA (ESQUINA SUPERIOR IZQUIERDA - Glassmorphism)
+              Positioned(
+                top: 10,
+                left: 10,
+                child: _buildMinimalControlButton(
+                  icon: Icons.close,
+                  onTap: () => Navigator.pop(context),
+                  iconColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  borderColor:
+                      primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                  isTopControl: true,
+                ),
+              ),
+
+              // 🔄 2. BOTÓN RETOMAR FOTO (ESQUINA SUPERIOR DERECHA - Glassmorphism)
+              if (_image != null)
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _buildMinimalControlButton(
+                    icon: Icons.refresh,
+                    onTap: () {
+                      setState(() {
+                        _image = null;
+                        _predictionResult = "";
+                      });
+                    },
+                    iconColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    borderColor:
+                        primaryAppColor, // 🎯 CORREGIDO: Usando primaryAppColor
+                    isTopControl: true,
                   ),
                 ),
 
-                // Botón Voltear Cámara (Centro)
-                ClipRRect(
-                borderRadius: BorderRadius.circular(12.0), // Esquinas redondeadas
-                child: BackdropFilter(
-                  filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0), // Nivel de desenfoque
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                    decoration: BoxDecoration(
-                      // Color de fondo semitransparente (Blanco 20%)
-                      color: Colors.orange.withOpacity(0.5), 
-                      borderRadius: BorderRadius.circular(12.0),
-                      // Borde sutil
-                      border: Border.all(color: Colors.white.withOpacity(0.4)), 
-                    ),
-                    child: InkWell( // Usa InkWell para manejar el tap y el efecto visual (splash)
-                      onTap: _switchCamera,
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.cameraswitch, color: Colors.white),
-                          SizedBox(width: 8),
-                          Text(
-                            'Voltear',
-                            style: TextStyle(color: Colors.white, fontSize: 14),
+              // Controles inferiores
+              Positioned(
+                bottom: 30,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    // Indicador del estado de predicción (Glassmorphism aplicado)
+                    if (_isPredicting)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primaryAppColor.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              "Analizando...",
+                              style: TextStyle(
+                                color: floatingControlColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
-                        ],
+                        ),
                       ),
+
+                    const SizedBox(height: 14),
+
+                    // Fila de controles de cámara
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        // 🔄 BOTÓN DE CAMBIO DE CÁMARA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.cameraswitch,
+                          onTap: _switchCamera,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+
+                        // 📸 Botón de captura (Círculo Estilo iOS - Glassmorphism)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(75),
+                          child: BackdropFilter(
+                            filter: ui.ImageFilter.blur(
+                              sigmaX: 8.0,
+                              sigmaY: 8.0,
+                            ),
+                            child: GestureDetector(
+                              onTap: _takePicture,
+                              child: Container(
+                                width: 75,
+                                height: 75,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.15),
+                                  border: Border.all(
+                                    color: primaryAppColor.withOpacity(0.8),
+                                    width:
+                                        7, // Mantenemos 4.0 aquí para que sea el principal
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 🖼️ BOTÓN DE GALERÍA (Glassmorphism y Borde Grueso)
+                        _buildMinimalControlButton(
+                          icon: Icons.photo_library,
+                          onTap: _pickImage,
+                          iconColor: primaryAppColor,
+                          borderColor: primaryAppColor,
+                          isTopControl: false,
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
               ),
-
-                ElevatedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.photo_library),
-                  label: const Text('Galería'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
-
-            // 📰 Área de Resultado de la Predicción
-            Text(
-              'Resultado de la Predicción:',
-              style: kBodyTextStyle.copyWith(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            const Divider(),
-            Container(
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8.0),
-                border: Border.all(color: Colors.blue.shade200),
-              ),
-              child: Text(
-                _predictionResult,
-                style: kBodyTextStyle.copyWith(color: Colors.blue.shade800),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -343,41 +463,33 @@ class _CamaraScreenState extends State<CamaraScreen> {
     super.dispose();
   }
 
-
   Future<void> _switchCamera() async {
-    // 1. Verificar si hay al menos dos cámaras
     if (_cameras == null || _cameras!.length < 2) {
       debugPrint("Solo hay una cámara disponible.");
       return;
     }
 
-    // Determinar la cámara actual y la nueva
     final currentCamera = _controller!.description;
     CameraDescription newCamera;
 
     if (currentCamera == _cameras![0]) {
-      // Si estamos en la cámara 0 (generalmente trasera), vamos a la 1
       newCamera = _cameras![1];
     } else {
-      // Si estamos en la cámara 1 (generalmente frontal), volvemos a la 0
       newCamera = _cameras![0];
     }
 
-    // 2. Disponer del controlador anterior
     await _controller!.dispose();
 
-    // 3. Inicializar el nuevo controlador
     _controller = CameraController(
-      newCamera, 
-      ResolutionPreset.medium, 
+      newCamera,
+      ResolutionPreset.medium,
       enableAudio: false,
     );
-    
-    // 4. Esperar a que inicialice y actualizar la interfaz
+
     try {
       await _controller!.initialize();
       if (mounted) {
-        setState(() {}); // Actualiza CameraPreview
+        setState(() {});
       }
     } catch (e) {
       debugPrint("Error al cambiar la cámara: $e");
