@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart'; // 👈 Agregamos la importac
 import 'package:project_sayit/l10n/app_localizations.dart';
 import 'package:project_sayit/screens/signup_screen.dart';
 import 'package:project_sayit/screens/login_screen.dart'; // Importa la pantalla de login
+import 'package:project_sayit/auth/auth_check.dart'; // 👈 Importamos el nuevo "vigilante"
 
 // 1. La función main debe ser asíncrona.
 void main() async {
@@ -46,7 +47,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
 
-      home: const LoginScreen(),
+      home: const AuthCheckScreen(),
     );
   }
 }

@@ -13,6 +13,7 @@ import 'package:project_sayit/auth/database_service.dart';
 import 'dart:ui' as ui; // Importación necesaria para ImageFilter
 import 'package:project_sayit/models/signal_description.dart';
 import 'package:project_sayit/screens/detail_screen.dart';
+import 'package:crypto/crypto.dart';
 
 class CamaraScreen extends StatefulWidget {
   const CamaraScreen({super.key});
@@ -25,6 +26,7 @@ class _CamaraScreenState extends State<CamaraScreen> {
   CameraController? _controller;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
+
   File? _image;
   String _predictionResult = 'Esperando imagen...';
   bool _isPredicting = false; // nos ayuda para mejor manejo la carga/predicción
@@ -65,6 +67,25 @@ class _CamaraScreenState extends State<CamaraScreen> {
       });
     } catch (e) {
       setState(() => _predictionResult = 'Error al inicializar la cámara: $e');
+    }
+  }
+
+  // 🆕 FUNCIÓN DE MITIGACIÓN: Calcula el Hash SHA-256 de un archivo
+  Future<String> _calculateFileHash(File file) async {
+    try {
+      // 1. Lee el archivo como bytes
+      final bytes = await file.readAsBytes();
+
+      // 2. Calcula el hash SHA-256 de los bytes
+      final digest = sha256.convert(bytes);
+
+      // 3. Devuelve el hash como una cadena hexadecimal
+      print("hash de la imagen: $digest");
+      return digest.toString();
+    } catch (e) {
+      print("Error al calcular el hash de la imagen: $e");
+      // En caso de error, devolver una cadena vacía o un indicador de error.
+      return '';
     }
   }
 
@@ -198,6 +219,12 @@ class _CamaraScreenState extends State<CamaraScreen> {
   // ⚡ FUNCIÓN: Enviar JSON al servidor con carga de index.json real (LÓGICA CORREGIDA)
   Future<String> _enviarImagenAlServidorJson(File imageFile) async {
     try {
+      // MITIGACIÓN 1: CALCULAR EL HASH ANTES DE ENVIAR
+      final imageHash = await _calculateFileHash(imageFile);
+      if (imageHash.isEmpty) {
+        return "Error: No se pudo generar la huella digital (hash) de la imagen.";
+      }
+      // ----------------------------------------------------
       final processedImage = await _processImage(imageFile);
 
       final predictionInstance = {
@@ -233,12 +260,14 @@ class _CamaraScreenState extends State<CamaraScreen> {
         if (classResultEntry != null) {
           final signalId = classResultEntry[0].toString();
           final signalName = classResultEntry[1].toString();
+          final imageFileHash = imageHash;
 
           await DatabaseService().saveDetection(
             signResult: signalName,
             confidence: maxProb,
             signalId: signalId,
             iconPath: signalId,
+            imageHash: imageFileHash,
           );
 
           if (mounted) {

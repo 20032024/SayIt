@@ -20,6 +20,7 @@ class DatabaseService {
     required double confidence,
     required String signalId,
     required String iconPath,
+    required imageHash,
   }) async {
     final user = _auth.currentUser;
 
@@ -40,6 +41,7 @@ class DatabaseService {
         'signalId': signalId,
         'iconPath': iconPath,
         'timestamp': FieldValue.serverTimestamp(),
+        'imageHash': imageHash,
       });
 
       print(

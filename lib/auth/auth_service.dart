@@ -10,6 +10,20 @@ class AuthService {
   // Instancia de Firestore para interactuar con la base de datos
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  // ⚠️ NUEVO: Asegura que siempre haya un usuario logueado (anónimo o registrado)
+  Future<User> ensureUserIsLoggedIn() async {
+    User? user = _auth.currentUser;
+    if (user == null) {
+      // Intenta iniciar sesión anónimamente si no hay usuario
+      final userCredential = await _auth.signInAnonymously();
+      user = userCredential.user;
+    }
+    if (user == null) {
+      throw Exception("No se pudo obtener ni crear un usuario para la sesión.");
+    }
+    return user;
+  }
+
   // =========================================================
   // FUNCIÓN AUXILIAR: GUARDAR DATOS DEL USUARIO EN FIRESTORE
   // =========================================================
@@ -43,6 +57,9 @@ class AuthService {
       // 2. GUARDAR DATOS EN FIRESTORE si la autenticación fue exitosa
       if (credential.user != null) {
         await _saveUserToFirestore(credential.user!.uid, email, name);
+
+        // 🚀 CRÍTICO: Forzar la recarga del objeto de usuario para asegurar que el estado sea fresco
+        await credential.user!.reload();
       }
 
       return credential;
@@ -85,6 +102,13 @@ class AuthService {
       );
 
       // Nota: Si el usuario es nuevo, deberías guardarlo en Firestore aquí también.
+      if (userCredential.user != null) {
+        // Asumo que tienes una lógica similar a _saveUserToFirestore para el login de Google si es la primera vez.
+        // Para este caso, solo nos aseguramos de recargar.
+
+        // 🚀 CRÍTICO: Forzar la recarga del objeto de usuario
+        await userCredential.user!.reload();
+      }
 
       return userCredential;
     } on FirebaseAuthException catch (e) {
@@ -102,5 +126,10 @@ class AuthService {
     if (!kIsWeb) {
       await _googleSignIn.signOut();
     }
+  }
+
+  /// Retorna el usuario de Firebase Auth actualmente autenticado.
+  User? getCurrentUser() {
+    return _auth.currentUser;
   }
 }
