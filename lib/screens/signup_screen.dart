@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_sayit/auth/auth_service.dart'; // Importa tu servicio de autenticación
 import 'package:project_sayit/screens/home_screen.dart'; // Importa tu pantalla principal (Home)
+import 'package:project_sayit/screens/privacy_security_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -10,13 +11,11 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  // [NUEVO] Clave global para validar el formulario
   final _formKey = GlobalKey<FormState>();
 
-  // Instancia del servicio de autenticación
+  bool _agreedToPolicy = false;
   final AuthService _authService = AuthService();
 
-  // Define el color principal de la aplicación, que parece ser naranja.
   final Color _primaryColor = const Color(0xFFFF9800);
 
   // Controladores para los campos de texto
@@ -26,10 +25,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
-  // Controla la visibilidad de la contraseña
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
-  bool _isLoading = false; // Estado para el indicador de carga
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -44,7 +42,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // LOGICA DE REGISTRO CON FIREBASE Y FIRESTORE
   // =========================================================
   Future<void> _handleRegister() async {
-    // [VALIDACIÓN CRÍTICA]: Verifica si el formulario es válido.
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -53,20 +50,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
 
-    // 1. Iniciar proceso de carga
     setState(() {
       _isLoading = true;
     });
 
-    // 2. Llama a la función del servicio que registra y guarda en Firestore
     final userCredential = await _authService.registerWithEmailAndPassword(
       email: email,
       password: password,
-      name: name, // Enviamos el nombre para Firestore
+      name: name,
     );
 
     if (mounted) {
-      // 3. Finalizar proceso de carga
       setState(() {
         _isLoading = false;
       });
@@ -74,7 +68,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (userCredential != null) {
         // Éxito: Navegar a la pantalla principal
         if (mounted) {
-          // Asumiendo que 'WelcomeScreen' es la pantalla principal o Home
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const WelcomeScreen()),
@@ -91,6 +84,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       }
     }
+  }
+
+  // =========================================================
+  // WIDGET PARA LA CASILLA DE CONSENTIMIENTO
+  // =========================================================
+  Widget _buildConsentCheckbox(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            height: 24.0,
+            width: 24.0,
+            child: Checkbox(
+              value: _agreedToPolicy,
+              onChanged: (bool? newValue) {
+                setState(() {
+                  _agreedToPolicy = newValue ?? false;
+                });
+              },
+            ),
+          ),
+          const SizedBox(width: 8.0),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PrivacySecurityScreen(),
+                  ),
+                );
+              },
+              child: RichText(
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 14.0, color: Colors.black54),
+                  children: <TextSpan>[
+                    const TextSpan(text: 'He leído y estoy de acuerdo con la '),
+                    TextSpan(
+                      text: 'Política de Privacidad',
+                      style: TextStyle(
+                        color: Theme.of(context).primaryColor,
+                        fontWeight: FontWeight.bold,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // =========================================================
@@ -140,8 +188,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     String hintText,
     bool isVisible,
     ValueChanged<bool> onChanged, {
-    // [CORRECCIÓN]: Coloca el validator dentro de llaves {}
-    // Esto lo hace un parámetro NOMINADO y OPCIONAL, resolviendo el error.
     String? Function(String?)? validator,
   }) {
     return TextFormField(
@@ -159,7 +205,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.red, width: 2),
         ),
-        // Estilos de borde normales
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
@@ -188,7 +233,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
-      // Muestra el indicador de carga o el contenido
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFFFF9800)),
@@ -198,7 +242,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 horizontal: 24.0,
                 vertical: 16.0,
               ),
-              // [CLAVE]: Usamos el widget Form con la clave de validación
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -295,11 +338,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           return 'La contraseña debe tener al menos 8 caracteres.';
                         }
                         if (!value.contains(RegExp(r'[0-9]'))) {
-                          return 'La contraseña debe incluir al menos un número.'; // ESPAÑOL
+                          return 'La contraseña debe incluir al menos un número.';
                         }
 
                         if (!value.contains(RegExp(r'[!#\$_]'))) {
-                          return 'La contraseña debe incluir un carácter especial (!, #, o _).'; // ESPAÑOL
+                          return 'La contraseña debe incluir un carácter especial (!, #, o _).';
                         }
 
                         return null;
@@ -332,6 +375,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       },
                     ),
                     const SizedBox(height: 40),
+                    _buildConsentCheckbox(context),
 
                     // Botón de Registrarse
                     ElevatedButton(
@@ -341,12 +385,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
+                        //disabledBackgroundColor: _secondaryColor.withOpacity(0.5),
                       ),
-                      onPressed: _isLoading ? null : _handleRegister,
-                      child: const Text(
-                        'Registrarse',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
+                      onPressed: (_isLoading || !_agreedToPolicy)
+                          ? null
+                          : _handleRegister,
+                      child: _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              'Registrarse',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 24),
 
