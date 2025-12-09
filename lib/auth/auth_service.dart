@@ -10,7 +10,7 @@ class AuthService {
   // Instancia de Firestore para interactuar con la base de datos
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // ⚠️ NUEVO: Asegura que siempre haya un usuario logueado (anónimo o registrado)
+  // ⚠️ Asegura que siempre haya un usuario logueado (anónimo o registrado)
   Future<User> ensureUserIsLoggedIn() async {
     User? user = _auth.currentUser;
     if (user == null) {
@@ -28,7 +28,6 @@ class AuthService {
   // FUNCIÓN AUXILIAR: GUARDAR DATOS DEL USUARIO EN FIRESTORE
   // =========================================================
   /// Guarda el email y el nombre del usuario en la colección 'usuarios' de Firestore.
-  /// Usa el UID del usuario (generado por Firebase Auth) como ID del documento.
   Future<void> _saveUserToFirestore(
     String uid,
     String email,
@@ -41,16 +40,17 @@ class AuthService {
   }
 
   // =========================================================
-  // REGISTRO CON EMAIL Y CONTRASEÑA
+  // REGISTRO CON EMAIL Y CONTRASEÑA (¡CORREGIDO!)
   // =========================================================
   /// Crea una cuenta de usuario en Firebase Auth y guarda su perfil en Firestore.
   Future<UserCredential?> registerWithEmailAndPassword({
     required String email,
     required String password,
-    required String name, // Se requiere el nombre para guardarlo en Firestore
+    required String name,
   }) async {
     try {
       // 1. Crear la cuenta en Firebase Auth
+      // 🚨 CORRECCIÓN: Usar createUserWithEmailAndPassword para REGISTRAR
       final UserCredential credential = await _auth
           .createUserWithEmailAndPassword(email: email, password: password);
 
@@ -58,17 +58,44 @@ class AuthService {
       if (credential.user != null) {
         await _saveUserToFirestore(credential.user!.uid, email, name);
 
-        // 🚀 CRÍTICO: Forzar la recarga del objeto de usuario para asegurar que el estado sea fresco
+        // 🚀 Forzar la recarga del objeto de usuario
         await credential.user!.reload();
       }
 
       return credential;
     } on FirebaseAuthException catch (e) {
       print('Firebase Auth Error: ${e.code}');
-      // Manejo de errores de autenticación
+      // Manejo de errores de autenticación (ej. email-already-in-use)
       return null;
     } catch (e) {
       print('Error de registro: $e');
+      return null;
+    }
+  }
+
+  // =========================================================
+  // LOGIN CON EMAIL Y CONTRASEÑA (AÑADIDO)
+  // =========================================================
+  /// Inicia sesión con el email y contraseña.
+  Future<UserCredential?> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // 1. Llama a la función de Firebase Auth para INICIAR SESIÓN
+      final UserCredential credential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      await credential.user?.reload();
+      return credential;
+    } on FirebaseAuthException catch (e) {
+      // Manejo de errores (ej. user-not-found, wrong-password)
+      print('Firebase Auth Error durante el login: ${e.code}');
+      return null;
+    } catch (e) {
+      print('Error desconocido durante el login: $e');
       return null;
     }
   }
@@ -101,12 +128,9 @@ class AuthService {
         credential,
       );
 
-      // Nota: Si el usuario es nuevo, deberías guardarlo en Firestore aquí también.
+      // Si el usuario es nuevo, deberías guardarlo en Firestore aquí también.
       if (userCredential.user != null) {
-        // Asumo que tienes una lógica similar a _saveUserToFirestore para el login de Google si es la primera vez.
-        // Para este caso, solo nos aseguramos de recargar.
-
-        // 🚀 CRÍTICO: Forzar la recarga del objeto de usuario
+        // 🚀 Forzar la recarga del objeto de usuario
         await userCredential.user!.reload();
       }
 
