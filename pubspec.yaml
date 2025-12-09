@@ -40,6 +40,7 @@ dependencies:
   firebase_auth: ^6.1.2   
   google_sign_in: ^6.2.1
   cloud_firestore: ^6.1.0 # Permite guardar datos de usuario
+  crypto: ^3.0.7
 
   flutter_localizations: # Añade esta línea
     sdk: flutter

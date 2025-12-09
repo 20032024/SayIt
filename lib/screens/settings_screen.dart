@@ -5,6 +5,8 @@ import 'package:project_sayit/screens/login_screen.dart';
 import 'package:project_sayit/screens/privacy_security_screen.dart';
 import 'package:project_sayit/screens/about_us_screen.dart';
 import 'custom_bottom_nav.dart';
+import 'package:project_sayit/auth/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Necesitas el tipo User
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,7 +16,41 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final AuthService _authService = AuthService(); // Instancia del servicio
+  String _displayName = 'User Name';
+  String _userIdentifier = '@alias';
   bool notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserInfo(); // Llama a la función para cargar los datos
+  }
+
+  void _loadUserInfo() {
+    final User? user = _authService.getCurrentUser();
+
+    if (user != null) {
+      // 1. Obtener el Nombre Principal
+      // Prioriza displayName (si viene de Google) o usa la parte del correo
+      String name = user.displayName ?? user.email ?? 'No Name';
+
+      // Si el nombre principal es el correo (común si no se definió uno al registrar)
+      if (name.contains('@') && name != user.email) {
+        // Si es un correo, solo tomamos la parte antes del '@' como nombre
+        name = name.split('@')[0];
+      }
+
+      // 2. Obtener el Identificador/Alias (Usaremos el correo para Google)
+      String identifier =
+          user.email ?? user.uid; // Si el email es null, usa el UID
+
+      setState(() {
+        _displayName = name;
+        _userIdentifier = identifier;
+      });
+    }
+  }
 
   // --- FUNCIÓN NUEVA PARA MOSTRAR LA ALERTA ---
   void _showEditDialog() {
@@ -88,48 +124,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 20),
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Color(0xFFFEEBC7),
-                      child: Icon(
-                        Icons.person_outline,
-                        size: 60,
-                        color: Color(0xFFF59E0B),
-                      ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () {
-                          _showEditDialog(); // Lógica para mostrar la alerta
-                        },
-                        child: const CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Color(0xFFF97316),
-                          child: Icon(
-                            Icons.edit,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // ... (Stack con el CircleAvatar)
+                // ...
                 const SizedBox(height: 16),
-                const Text(
-                  'Lucas Scott',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                // [USAR VARIABLE DE ESTADO 1: Nombre Principal]
+                Text(
+                  _displayName,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '@lucasscott3',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                // [USAR VARIABLE DE ESTADO 2: Email/Identificador]
+                Text(
+                  _userIdentifier,
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
                 ),
                 const SizedBox(height: 48),
                 _buildSettingsList(),

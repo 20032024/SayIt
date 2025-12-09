@@ -127,4 +127,9 @@ class AuthService {
       await _googleSignIn.signOut();
     }
   }
+
+  /// Retorna el usuario de Firebase Auth actualmente autenticado.
+  User? getCurrentUser() {
+    return _auth.currentUser;
+  }
 }
