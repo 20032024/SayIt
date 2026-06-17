@@ -15,19 +15,19 @@
       },
       "oauth_client": [
         {
+          "client_id": "869244748210-7j9a3ha32b1pdt5mmrk989e00fi1ukgt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ander.snapsign",
+            "certificate_hash": "9032fce9599a03e426e8bdd8d6376cc4c1588412"
+          }
+        },
+        {
           "client_id": "869244748210-9sf2035m1vavaa2d2ec1g7v3ff9ices3.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.ander.snapsign",
             "certificate_hash": "5e237c19428186e4eadb80971666109c009ea2dc"
-          }
-        },
-        {
-          "client_id": "869244748210-bcob75td5ueaspdpuj2epv9ecoo7o5hi.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.ander.snapsign",
-            "certificate_hash": "fee6363fe0e640c5885500c1249895baac09ca2c"
           }
         },
         {

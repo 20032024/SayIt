@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // No se usa directamente aquí, pero útil.
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
-// Asegúrate de que estas importaciones son correctas
 import 'custom_bottom_nav.dart';
 import 'package:project_sayit/models/icon_mapper_model.dart';
 import 'package:project_sayit/auth/database_service.dart';
@@ -16,7 +15,6 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ⚠️ Importante: El StreamBuilder necesita que el usuario esté autenticado.
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
